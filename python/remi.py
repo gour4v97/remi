@@ -10,7 +10,7 @@ import time
 
 import pystray
 
-from voicecore import asr, browser, config, history, router
+from voicecore import asr, autostart, browser, config, history, router, tts
 from voicecore.app import TrayApp, COLORS
 from voicecore.translit import to_roman
 
@@ -22,19 +22,6 @@ _state = {"capturing": None, "busy": False}
 _lock = threading.Lock()
 
 
-def speak(text: str, enabled: bool):
-    if not enabled or not text:
-        return
-    try:
-        import pyttsx3
-        engine = pyttsx3.init()
-        engine.say(text)
-        engine.runAndWait()
-        engine.stop()
-    except Exception:
-        pass  # TTS is best-effort feedback
-
-
 def process(pcm: bytes, cfg, tray: TrayApp):
     started = time.time()
     try:
@@ -42,21 +29,20 @@ def process(pcm: bytes, cfg, tray: TrayApp):
             raise RuntimeError("Recording too short.")
         if asr.peak_amplitude(pcm) <= 32:
             raise RuntimeError("Silent recording — is the right mic selected?")
-        text = asr.transcribe_pcm(pcm, cfg["local_model"], "hinglish")
+        text = asr.transcribe_pcm(pcm, cfg["local_model"], "hinglish", cfg)
         text = to_roman(text).strip()
         if not text:
             raise RuntimeError("Empty transcript.")
         outcome = router.run(text, cfg)
         history.append(APP, {"transcript": text, "detail": outcome.detail,
                              "ok": outcome.ok, "ms": int((time.time() - started) * 1000)})
-        speak(outcome.spoken if outcome.ok else f"Sorry. {outcome.spoken}",
-              cfg.get("voice_feedback", True))
+        tts.say(outcome.spoken if outcome.ok else f"Sorry. {outcome.spoken}", cfg.get("voice_feedback", True))
         if not outcome.ok:
             tray.notify("Remi (py)", outcome.spoken, error=True)
     except Exception as ex:
         history.append(APP, {"transcript": "", "detail": "error", "ok": False,
                              "error": str(ex), "ms": int((time.time() - started) * 1000)})
-        speak("Sorry, that failed.", cfg.get("voice_feedback", True))
+        tts.say("Sorry, that failed.", cfg.get("voice_feedback", True))
         tray.notify("Remi (py) failed", str(ex), error=True)
 
 
@@ -82,6 +68,55 @@ def toggle(tray: TrayApp, cfg):
     _state["busy"] = False
     tray.set_state("idle", cfg.get("hotkey", HOTKEY_DEFAULT))
     threading.Thread(target=process, args=(pcm, cfg, tray), daemon=True).start()
+
+
+CATALOG = {"tiny": 75, "base": 142, "small": 487, "medium": 1527,
+           "large-v3-turbo": 1620, "large-v3-turbo-q5_0": 574}
+
+
+def model_cmd(args) -> int:
+    sub = args.payload or "list"
+    if sub == "list":
+        print(f"models dir: {config.LOCALAPPDATA / 'models'} (borrows voice-trans models when present)")
+        for name, mb in sorted(CATALOG.items()):
+            mark = "installed" if config.model_path(name).exists() else "        "
+            print(f"  {name:22} {mark}  ~{mb} MB")
+        return 0
+    if sub.startswith("download"):
+        name = sub.split()[-1] if " " in sub else (args.payload or "")
+        parts = (args.payload or "").split()
+        name = parts[1] if len(parts) > 1 else parts[0] if parts else ""
+        if name not in CATALOG:
+            print(f"unknown model '{name}'. available: {', '.join(sorted(CATALOG))}")
+            return 1
+        if config.model_path(name).exists():
+            print(f"{name} already installed")
+            return 0
+        url = f"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{name}.bin"
+        target = config.LOCALAPPDATA / "models" / f"ggml-{name}.bin"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        print(f"downloading ggml-{name}.bin (~{CATALOG[name]} MB) ...")
+        import urllib.request as _u
+
+        def _prog(blocks, bs, total):
+            done = blocks * bs
+            if total > 0:
+                print(f"\r  {min(100, done * 100 // total):3}%  {done / 1048576:.0f} MB", end="")
+
+        _u.urlretrieve(url, target, reporthook=_prog)
+        print(f"\ninstalled: {target}")
+        return 0
+    if sub in CATALOG:
+        if not config.model_path(sub).exists():
+            print(f"'{sub}' not installed — run: python remi.py model download {sub}")
+            return 1
+        cfg2 = config.load(APP)
+        cfg2["local_model"] = sub
+        config.save(APP, cfg2)
+        print(f"local_model = {sub}  (picked up at the next command)")
+        return 0
+    print("usage: python remi.py model list | model download <name> | model <name>")
+    return 1
 
 
 def say_text(text: str) -> int:
@@ -112,7 +147,7 @@ def say_audio(path: str) -> int:
         pcm = _resample_16k(samples.tobytes(), rate)
     else:
         pcm = samples.tobytes()
-    text = asr.transcribe_pcm(pcm, cfg["local_model"], "hinglish")
+    text = asr.transcribe_pcm(pcm, cfg["local_model"], "hinglish", cfg)
     text = to_roman(text).strip()
     print(f"heard    : {text}")
     outcome = router.run(text, cfg)
@@ -157,7 +192,8 @@ def build_tray(cfg) -> TrayApp:
 def main():
     ap = argparse.ArgumentParser(description="Remi (Python port) — voice-controlled browser")
     ap.add_argument("cmd", nargs="?", default="start",
-                    choices=["start", "say", "say-audio", "history", "doctor"])
+                    choices=["start", "say", "say-audio", "history", "doctor",
+                             "model", "autostart"])
     ap.add_argument("payload", nargs="?", help="command text / wav path")
     args = ap.parse_args()
 
@@ -179,12 +215,17 @@ def main():
             what = e.get("detail", "") if e.get("ok") else f"ERROR: {e.get('error')}"
             print(f"{e.get('at', '')[:19]}  {e.get('transcript', '')[:30]:30}  {what[:60]}")
         return 0
+    if args.cmd == "model":
+        return model_cmd(args)
+    if args.cmd == "autostart":
+        return autostart.handle_cli(APP, __file__, args.payload)
     if args.cmd == "doctor":
         print(f"model    : {cfg['local_model']} -> {'found' if config.model_path(cfg['local_model']).exists() else 'MISSING'}")
         print(f"browser  : {browser.find_browser_exe() or 'NOT FOUND'}")
         print(f"cdp      : {'up' if browser.is_cdp_up(cfg['cdp_port']) else 'down'} on port {cfg['cdp_port']}")
         return 0
 
+    asr.prewarm(cfg)
     print(f"Remi (Python) — hotkey: {cfg['hotkey']} — tray icon starting…")
     print("NOTE: stop the .NET remi daemon first if it is running (same hotkey).")
     tray = build_tray(cfg)

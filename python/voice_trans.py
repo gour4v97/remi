@@ -10,7 +10,7 @@ import time
 
 import pystray
 
-from voicecore import asr, config, delivery, history
+from voicecore import asr, autostart, config, delivery, history
 from voicecore.app import TrayApp, COLORS
 from voicecore.translit import smart_writing, to_roman
 
@@ -55,7 +55,7 @@ def process(pcm: bytes, cfg, tray: TrayApp):
             raise RuntimeError("Recording too short.")
         if asr.peak_amplitude(pcm) <= 32:
             raise RuntimeError("Silent recording — is the right mic selected?")
-        text = asr.transcribe_pcm(pcm, cfg["local_model"], cfg.get("language", "hinglish"))
+        text = asr.transcribe_pcm(pcm, cfg["local_model"], cfg.get("language", "hinglish"), cfg)
         if cfg.get("language", "hinglish") == "hinglish":
             text = to_roman(text)
         text = smart_writing(text, cfg.get("writing_mode", "smart"))
@@ -152,13 +152,20 @@ def build_tray(cfg) -> TrayApp:
 
 def main():
     ap = argparse.ArgumentParser(description="Voice Trans (Python port)")
-    ap.add_argument("cmd", nargs="?", default="start", choices=["start", "history"])
+    ap.add_argument("cmd", nargs="?", default="start",
+                    choices=["start", "history", "model", "autostart"])
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
     cfg = config.load(APP)
     cfg.setdefault("hotkey", HOTKEY_DEFAULT)
 
+    if args.cmd == "model":
+        from remi import model_cmd  # shared downloader
+        import argparse as _ap
+        return model_cmd(_ap.Namespace(payload=args.payload))
+    if args.cmd == "autostart":
+        return autostart.handle_cli(APP, __file__, args.payload)
     if args.cmd == "history":
         entries = history.load(APP, 20)
         for e in reversed(entries):
@@ -166,6 +173,7 @@ def main():
             print(f"{e.get('at', '')[:19]}  {what[:90]}")
         return
 
+    asr.prewarm(cfg)
     print(f"Voice Trans (Python) — hotkey: {cfg['hotkey']} — tray icon starting…")
     print("NOTE: stop the .NET voice-trans daemon first if it is running (same hotkey).")
     tray = build_tray(cfg)
