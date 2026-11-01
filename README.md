@@ -35,12 +35,22 @@ src\Remi\bin\Release\net8.0-windows\remi.exe
 
 Press `Ctrl+Alt+Space` to dictate anywhere, `Ctrl+Alt+B` to command your browser. Full command lists and config in each app's folder ([Voice Trans](src/VoiceTrans/) · [Remi Browser](src/Remi/)).
 
+## Four implementations, one engine
+
+| Language | Location | Status |
+|---|---|---|
+| C# / .NET 8 | `src/` (this solution) | original, full-featured |
+| Python | [`python/`](python/) | full port — tray, hotkeys, CDP, TTS |
+| Java | [`java/`](java/) | full port — tray, hotkeys, CDP, TTS |
+
+All implementations share the same ggml models and the whisper.cpp CLI engine, plus the same config philosophy, so you can run whichever stack you prefer (one suite at a time — hotkeys would collide).
+
 ## Repository layout
 
 ```
-src/
-  VoiceTrans/   dictation app (its README has full docs)
-  Remi/         voice-controlled browser (its README has full docs)
+src/            C#/.NET apps (VoiceTrans + Remi)
+python/         Python port (voicecore + two apps)
+java/           Java port (single jar, two apps)
 testdata/       sample WAVs for replay/pipeline testing
 ```
 
