@@ -18,7 +18,7 @@ APP = "voice-trans-py"
 HOTKEY_DEFAULT = "ctrl+alt+space"
 LETTER, IDLE_COLOR = "V", COLORS["idle"]
 
-_state = {"capturing": None, "start": 0.0, "busy": False}
+_state = {"capturing": None, "start": 0.0, "busy": False, "hwnd": 0}
 _lock = threading.Lock()
 
 
@@ -41,14 +41,18 @@ def load_dictionary() -> list[str]:
 
 
 def apply_dictionary(text: str, terms: list[str]) -> str:
+    """Rewrite any-case matches to the canonical term. Boundary rule mirrors the
+    C# Dictionary.cs: not adjacent to another letter/digit (a space is a valid
+    boundary — the port previously included it in the class, so mid-sentence
+    terms never matched)."""
     import re
     for term in terms:
-        text = re.sub(r"(?<![\w" "\u0900-\u097F])" + re.escape(term) + r"(?![\w" "\u0900-\u097F])",
+        text = re.sub(r"(?<![\w\u0900-\u097F])" + re.escape(term) + r"(?![\w\u0900-\u097F])",
                       term, text, flags=re.IGNORECASE)
     return text
 
 
-def process(pcm: bytes, cfg, tray: TrayApp):
+def process(pcm: bytes, cfg, tray: TrayApp, start_hwnd: int = 0):
     started = time.time()
     try:
         if len(pcm) < 9600:
@@ -67,6 +71,11 @@ def process(pcm: bytes, cfg, tray: TrayApp):
         if mode == "clipboard":
             delivery.set_clipboard(text)
             detail = "clipboard"
+        elif mode == "guarded" and delivery.foreground_hwnd() != start_hwnd:
+            # focused window changed while speaking — clipboard only, like the .NET suite
+            delivery.set_clipboard(text)
+            detail = "clipboard (guarded fallback)"
+            tray.notify("Voice Trans (py)", "Focused window changed — transcript copied to clipboard.")
         else:
             delivery.set_clipboard(text)  # recoverability guarantee, like the .NET suite
             delivery.type_text(text)
@@ -93,15 +102,17 @@ def toggle(tray: TrayApp, cfg):
             _state["busy"] = True
     if _state["busy"]:
         pcm = cap.stop_and_read()
+        start_hwnd = _state["hwnd"]
         _state["busy"] = False
         tray.set_state("idle", cfg.get("hotkey", HOTKEY_DEFAULT))
-        threading.Thread(target=process, args=(pcm, cfg, tray), daemon=True).start()
+        threading.Thread(target=process, args=(pcm, cfg, tray, start_hwnd), daemon=True).start()
 
 
 def _start_recording(tray: TrayApp, cfg):
     try:
         cap = _Mic()
         cap.start()
+        _state["hwnd"] = delivery.foreground_hwnd()
         tray.set_state("recording", cfg.get("hotkey", HOTKEY_DEFAULT))
         return cap
     except Exception as ex:
@@ -181,4 +192,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
