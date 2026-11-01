@@ -86,7 +86,8 @@ def eval_js(port: int, js: str) -> str | None:
     ws = websocket.create_connection(ws_url, timeout=6)
     try:
         ws.send(json.dumps({"id": 1, "method": "Runtime.evaluate",
-                            "params": {"expression": js, "returnByValue": True, "awaitPromise": True}}))
+                            "params": {"expression": js, "returnByValue": True,
+                                       "awaitPromise": True, "userGesture": True}}))
         while True:
             msg = json.loads(ws.recv())
             if msg.get("id") == 1:

@@ -17,6 +17,10 @@ SITES = {
     "linkedin": "https://www.linkedin.com", "netflix": "https://www.netflix.com",
     "hotstar": "https://www.hotstar.com", "maps": "https://www.google.com/maps",
     "drive": "https://drive.google.com", "spotify": "https://open.spotify.com",
+    # browser-internal pages
+    "history": "chrome://history", "downloads": "chrome://downloads",
+    "bookmarks": "chrome://bookmarks", "settings": "chrome://settings",
+    "extensions": "chrome://extensions",
 }
 
 CLICK_JS = ("(function(){var q=__Q__;var els=document.querySelectorAll('a,button,[role=button],"
@@ -28,6 +32,19 @@ CLICK_JS = ("(function(){var q=__Q__;var els=document.querySelectorAll('a,button
 TYPE_JS = ("(function(){var ae=document.activeElement;if(!ae||(ae.tagName!=='INPUT'&&"
            "ae.tagName!=='TEXTAREA'&&!ae.isContentEditable))return 'no input focused';"
            "document.execCommand('insertText',false,__Q__);return 'typed';})()")
+
+FIND_JS = ("(function(){if(!window.find(__Q__))return 'not found: '+__Q__;"
+           "return 'found';})()")
+
+ZOOM_JS = ("(function(){var b=document.body;var z=parseFloat(b.style.zoom)||1;"
+           "if(__M__==='in')z=Math.min(3,z+0.1);else if(__M__==='out')z=Math.max(0.3,z-0.1);else z=1;"
+           "b.style.zoom=z;return 'zoom '+(z*100).toFixed(0)+' percent';})()")
+
+VOLUME_JS = ("(function(){var el=document.querySelector('video')||document.querySelector('audio');"
+             "if(!el)return 'no media on this page';"
+             "if(__D__===0){el.muted=!el.muted;return el.muted?'muted':'unmuted';}"
+             "el.muted=false;el.volume=Math.min(1,Math.max(0,el.volume+__D__));"
+             "return 'volume '+(el.volume*100).toFixed(0)+' percent';})()")
 
 
 class Outcome:
@@ -119,6 +136,10 @@ def run(text: str, cfg) -> Outcome:
             js, label = "window.scrollTo(0, document.body.scrollHeight); 'bottom'", "scrolled to bottom"
         elif "up" in t or "upar" in t:
             js, label = "window.scrollBy(0,-600); 'scrolled up'", "scrolled up"
+        elif "left" in t or "bayen" in t or "baen" in t:
+            js, label = "window.scrollBy(-400,0); 'scrolled left'", "scrolled left"
+        elif "right" in t or "dayen" in t or "dain" in t:
+            js, label = "window.scrollBy(400,0); 'scrolled right'", "scrolled right"
         else:
             js, label = "window.scrollBy(0,600); 'scrolled down'", "scrolled down"
         return _eval(cfg, js, label)
@@ -142,8 +163,65 @@ def run(text: str, cfg) -> Outcome:
     if _is(t, "read title", "title batao", "kya page hai", "what page", "which page"):
         return _eval(cfg, "document.title", "page title")
 
-    # "X kholo" / "open X" before youtube-search so "youtube kholo" opens the site
-    open_payload = _starts_with(t, "open", "kholo", "khol", "launch", "jao")
+    # ---- media: volume & mute ----
+    if _is(t, "mute", "mute karo", "unmute", "unmute karo", "awaaz band karo"):
+        return _eval(cfg, VOLUME_JS.replace("__D__", "0"), "mute toggle")
+    if _is(t, "volume up", "volume badhao", "awaaz badhao", "awaaz badao"):
+        return _eval(cfg, VOLUME_JS.replace("__D__", "0.1"), "volume up")
+    if _is(t, "volume down", "volume kam karo", "awaaz kam karo"):
+        return _eval(cfg, VOLUME_JS.replace("__D__", "-0.1"), "volume down")
+
+    # ---- zoom ----
+    if _is(t, "zoom in", "zoom karo", "bada karo", "bada karo page"):
+        return _eval(cfg, ZOOM_JS.replace("__M__", "'in'"), "zoom in")
+    if _is(t, "zoom out", "chhota karo", "chota karo"):
+        return _eval(cfg, ZOOM_JS.replace("__M__", "'out'"), "zoom out")
+    if _is(t, "reset zoom", "normal zoom", "zoom reset"):
+        return _eval(cfg, ZOOM_JS.replace("__M__", "'reset'"), "zoom reset")
+
+    # ---- fullscreen ----
+    if _is(t, "fullscreen", "full screen", "full screen karo", "poori screen"):
+        return _eval(cfg, "(function(){if(document.fullscreenElement)return 'already fullscreen';"
+                          "document.documentElement.requestFullscreen();return 'fullscreen';})()",
+                     "fullscreen")
+    if _is(t, "exit fullscreen", "full screen band karo", "screen band karo"):
+        return _eval(cfg, "(function(){if(!document.fullscreenElement)return 'not fullscreen';"
+                          "document.exitFullscreen();return 'exited fullscreen';})()",
+                     "exit fullscreen")
+
+    # ---- find on page / print / select / copy ----
+    find = _starts_with(t, "find", "find karo", "page me dhundo", "page pe dhundo")
+    if find:
+        q = find.replace("\\", "\\\\").replace('"', '\\"')
+        return _eval(cfg, FIND_JS.replace("__Q__", f'"{q}"'), f"find '{find}'")
+    if _is(t, "print", "print karo", "print page"):
+        return _eval(cfg, "window.print(); 'opening print dialog'", "print dialog")
+    if _is(t, "select all", "sab select karo"):
+        return _eval(cfg, "document.execCommand('selectAll')?'selected all':'select failed'", "select all")
+    if _is(t, "copy", "copy karo", "copy this"):
+        return _eval(cfg, "document.execCommand('copy')?'copied':'nothing selected to copy'", "copy selection")
+
+    # ---- local answers (no browser needed) ----
+    if _is(t, "what time", "time batao", "time kya hua", "kitne baje hain", "samay kya hai"):
+        import time as _time
+        now = _time.strftime("%I:%M %p").lstrip("0")
+        return Outcome(True, f"it's {now}", now)
+    if _is(t, "what date", "date batao", "aaj ki tarikh", "aaj kya tarikh hai"):
+        import datetime as _dt
+        today = _dt.date.today().strftime("%B %d, %Y")
+        return Outcome(True, f"today is {today}", today)
+
+    # ---- duplicate tab ----
+    if _is(t, "duplicate tab", "tab copy karo"):
+        if not ensure_cdp(cfg):
+            return Outcome(False, "browser not reachable", f"no CDP on port {cfg['cdp_port']}")
+        pages = browser.tabs(cfg["cdp_port"])
+        if not pages:
+            return Outcome(False, "no open tabs", "empty tab list")
+        return _open(cfg, pages[0]["url"], "duplicated tab")
+
+    # "X kholo" / "open X" / "go to X" before youtube-search so "youtube kholo" opens the site
+    open_payload = _starts_with(t, "open", "kholo", "khol", "launch", "jao", "go to", "goto")
     if open_payload:
         site = open_payload.strip().rstrip(".!?")
         if site.lower() in SITES:
