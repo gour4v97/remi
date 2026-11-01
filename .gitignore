@@ -1,4 +1,11 @@
-bin/
-obj/
-*.user
-.vs/
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS / editors
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
