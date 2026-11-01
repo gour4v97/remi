@@ -10,7 +10,7 @@ namespace Remi;
 /// </summary>
 public static class Ipc
 {
-    public const string PipeName = "voice-trans";
+    public const string PipeName = "remi";
 
     public static async Task ServeAsync(Func<string, string> handler, CancellationToken ct)
     {
