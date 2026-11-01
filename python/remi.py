@@ -82,6 +82,10 @@ def model_cmd(args) -> int:
             mark = "installed" if config.model_path(name).exists() else "        "
             print(f"  {name:22} {mark}  ~{mb} MB")
         return 0
+    if sub == "download-cuda":
+        ok = asr.ensure_cuda()
+        print("CUDA build ready:" , asr.WHISPER_SERVER_CUDA if ok else "unavailable (no NVIDIA GPU or download failed)")
+        return 0 if ok else 1
     if sub.startswith("download"):
         name = sub.split()[-1] if " " in sub else (args.payload or "")
         parts = (args.payload or "").split()

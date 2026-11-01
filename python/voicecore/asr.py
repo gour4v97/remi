@@ -7,6 +7,7 @@ model warm so dictations take seconds instead of a fresh 20-30 s model load each
 """
 import json
 import re
+import shutil
 import subprocess
 import threading
 import time
@@ -19,8 +20,11 @@ from pathlib import Path
 from . import config
 
 WHISPER_ZIP_URL = "https://github.com/ggerganov/whisper.cpp/releases/download/b5454/whisper-bin-x64.zip"
+CUDA_ZIP_URL = "https://github.com/ggerganov/whisper.cpp/releases/download/b5454/whisper-bin-win-cuda-12.4.0-x64.zip"
 WHISPER_CLI = config.BIN_DIR / "whisper-cli.exe"
-WHISPER_SERVER = config.BIN_DIR / "whisper-server.exe"
+WHISPER_SERVER = config.BIN_DIR / "whisper-server.exe"          # CPU build
+CUDA_DIR = config.LOCALAPPDATA / "bin-cuda"
+WHISPER_SERVER_CUDA = CUDA_DIR / "whisper-server.exe"           # GPU build (~80x faster)
 DEFAULT_ASR_PORT = 9177
 
 _bin_lock = threading.Lock()
@@ -71,6 +75,37 @@ def server_up(port: int) -> bool:
         return False
 
 
+def has_nvidia() -> bool:
+    import os
+    return os.path.exists("C:/Windows/System32/nvidia-smi.exe") or shutil.which("nvidia-smi") is not None
+
+
+def ensure_cuda() -> bool:
+    """Downloads the CUDA whisper build once (only on NVIDIA machines)."""
+    if WHISPER_SERVER_CUDA.exists():
+        return True
+    if not has_nvidia():
+        return False
+    config.ensure_dirs()
+    CUDA_DIR.mkdir(parents=True, exist_ok=True)
+    print("downloading whisper.cpp CUDA build (~250 MB) for GPU transcription ...")
+    zip_path = CUDA_DIR / "cuda.zip"
+    try:
+        urllib.request.urlretrieve(CUDA_ZIP_URL, zip_path)
+        with zipfile.ZipFile(zip_path) as z:
+            for info in z.infolist():
+                if info.is_dir():
+                    continue
+                name = Path(info.filename).name
+                if name.lower().endswith((".exe", ".dll")):
+                    (CUDA_DIR / name).write_bytes(z.read(info))
+        zip_path.unlink(missing_ok=True)
+    except Exception as ex:
+        print(f"CUDA download failed ({ex}) - staying on CPU")
+        return False
+    return WHISPER_SERVER_CUDA.exists()
+
+
 def start_server(cfg: dict, wait_s: int = 90) -> bool:
     """Starts whisper-server with the configured model; returns True when / is answering."""
     global _server_proc, _spawned_by_us
@@ -83,17 +118,20 @@ def start_server(cfg: dict, wait_s: int = 90) -> bool:
     with _server_lock:
         if server_up(port):  # another app started it while we waited on the lock
             return True
-        print(f"starting whisper server (model {model.name}, port {port}) …")
+        exe = WHISPER_SERVER_CUDA if ensure_cuda() else WHISPER_SERVER
+        label = "GPU" if exe == WHISPER_SERVER_CUDA else "CPU"
+        print(f"starting whisper server ({label}, model {model.name}, port {port}) ...")
         _server_proc = subprocess.Popen(
-            [str(WHISPER_SERVER), "--model", str(model), "-t", "8",
+            [str(exe), "--model", str(model), "-t", "8",
              "--port", str(port), "-l", lang],
             creationflags=subprocess.CREATE_NO_WINDOW,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            cwd=str(exe.parent))  # CUDA build needs its bundled DLLs on the search path
         _spawned_by_us = True
         deadline = time.time() + wait_s
         while time.time() < deadline:
             if server_up(port):
-                print("whisper server ready.")
+                print(f"whisper server ready ({label}).")
                 return True
             time.sleep(0.5)
         return False
