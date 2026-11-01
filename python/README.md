@@ -31,6 +31,29 @@ python voice_trans.py history
 
 > **Important:** the Python and .NET versions register the same hotkeys. Run one suite at a time (`voice-trans stop` + `remi stop` for the .NET daemons first), or change the hotkey in `%APPDATA%\remi-suite-py\*.toml`.
 
+## What you can say (browser)
+
+| English | Hinglish |
+|---|---|
+| open youtube / open gmail / open chatgpt / go to example.com | youtube kholo, gmail khol do |
+| open history / downloads / settings / bookmarks / extensions | history kholo |
+| search nvidia rtx 4050 price / youtube lofi beats | dhundo nvidia rtx 4050 |
+| scroll down / up / top / bottom / left / right | niche, upar, sabse niche |
+| new tab / close tab / next tab / previous tab / duplicate tab | naya tab, tab band karo, agla tab |
+| refresh / go back / forward / read title | refresh karo, wapas jao, title batao |
+| play / pause / volume up / volume down / mute | chalao, roko, awaaz badhao |
+| zoom in / zoom out / reset zoom | bada karo, chhota karo |
+| find text / print / select all / copy / fullscreen / exit fullscreen | page me dhundo |
+| type hello world (focused input) / click subscribe | likho hello world, dabao subscribe |
+| what time / what date (spoken locally, no browser) | kitne baje hain, date batao |
+
+## Performance
+
+- One **whisper.cpp server** stays warm per suite (default port 9177) — model loads once, not per command
+- On NVIDIA machines the **CUDA build** (`py remi.py model download-cuda`, also automatic) takes transcription from ~30 s to **~0.3 s**
+- whisper-cli.exe remains as an automatic fallback
+- TTS uses a cached engine so confirmations are instant
+
 ## Layout
 
 ```
