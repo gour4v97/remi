@@ -1,47 +1,51 @@
 # Remi Suite
 
-Two Windows voice apps by **gour4v97**, sharing one local voice engine (Whisper — fully offline, Hindi / English / Hinglish):
+Two Windows voice apps by **gour4v97**, in pure **Python**, sharing one local voice engine:
 
 | App | What it does | Trigger |
 |---|---|---|
-| **[Voice Trans](src/VoiceTrans/)** 🎙️ | Push-to-talk dictation — speak, and the transcript is typed into whatever app has focus | `Ctrl+Alt+Space` |
-| **[Remi Browser](src/Remi/)** 🌐 | Voice-controlled browser — open sites, search, scroll, switch tabs, click, play/pause, with spoken confirmations | `Ctrl+Alt+B` |
+| **Voice Trans** 🎙️ | Push-to-talk dictation — speak, and the transcript is typed into whatever app has focus | `Ctrl+Alt+Space` |
+| **Remi Browser** 🌐 | Voice-controlled browser — 40+ commands in English/Hindi/Hinglish, with spoken confirmations | `Ctrl+Alt+B` |
 
 ```
-[hotkey] → speak → [hotkey] → 🧠 local Whisper transcription → 🖥️ typed into your app / browser action → 🔊 spoken confirmation
+[hotkey] → speak → [hotkey] → 🧠 local Whisper (GPU: ~0.3 s) → 🖥️ typed / browser action → 🔊 spoken confirmation
 ```
 
-Both apps run side by side (different hotkeys, separate tray icons). Your voice never leaves the machine unless you enable a cloud provider yourself.
+Everything runs locally — your voice never leaves the machine.
 
-## Build (one solution, both apps)
+## Performance
+
+- A **persistent whisper.cpp server** loads the model once and stays warm (both apps share it)
+- On NVIDIA GPUs it automatically uses the **CUDA build**: transcription drops from ~30 s (CPU) to **~0.3 s**
+- No NVIDIA GPU? It transparently falls back to the CPU build — still fully offline
+- Cached SAPI TTS engine, so confirmations don't lag either
+
+## Setup (once)
 
 ```powershell
-winget install Microsoft.DotNet.SDK.8
-dotnet build Remi.sln -c Release
+py -m pip install -r python/requirements.txt
 ```
 
-Executables land in `src\VoiceTrans\bin\Release\net8.0-windows\voice-trans.exe` and `src\Remi\bin\Release\net8.0-windows\remi.exe`.
+The whisper.cpp binaries + CUDA build download themselves into `%LOCALAPPDATA%\remi-suite-py\` on first use, and models are borrowed from an existing `%LOCALAPPDATA%\voice-trans\models` folder (or: `py voice_trans.py model download large-v3-turbo-q5_0`).
 
-## One-time setup
+## Run
 
 ```powershell
-# get a local model once — both apps share it (574 MB, best Hindi/Hinglish quality)
-src\VoiceTrans\bin\Release\net8.0-windows\voice-trans.exe model download large-v3-turbo-q5_0
+cd python
+py voice_trans.py        # dictation tray app    (Ctrl+Alt+Space)
+py remi.py               # browser tray app      (Ctrl+Alt+B)
 
-# run both daemons (tray icons appear)
-src\VoiceTrans\bin\Release\net8.0-windows\voice-trans.exe
-src\Remi\bin\Release\net8.0-windows\remi.exe
+py voice_trans.py autostart on     # start with Windows
+py remi.py autostart on
 ```
 
-Press `Ctrl+Alt+Space` to dictate anywhere, `Ctrl+Alt+B` to command your browser. Full command lists and config in each app's folder ([Voice Trans](src/VoiceTrans/) · [Remi Browser](src/Remi/)).
+Full command lists: [`python/README.md`](python/README.md).
 
 ## Repository layout
 
 ```
-src/
-  VoiceTrans/   dictation app (its README has full docs)
-  Remi/         voice-controlled browser (its README has full docs)
-testdata/       sample WAVs for replay/pipeline testing
+python/          the suite (voicecore engine + two apps) — see its README
+testdata/        sample WAVs for say-audio / pipeline testing
 ```
 
 ## License
