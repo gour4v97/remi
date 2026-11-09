@@ -29,6 +29,7 @@ def run_setup(non_interactive: bool = False) -> None:
     """Run interactive or automated setup wizard."""
     click.echo("\n" + "=" * 60)
     click.echo(f"   🚀 Welcome to {APP_DISPLAY_NAME} (v{APP_VERSION}) Setup Wizard")
+    click.echo("   Publisher: GAURAV")
     click.echo("=" * 60 + "\n")
     click.echo("This wizard will inspect your environment, verify hardware acceleration,")
     click.echo("download speech recognition models, and configure launch shortcuts.\n")
@@ -141,10 +142,19 @@ def create_launcher_scripts() -> list[str]:
     # 1. Remi Browser Launcher (Windows batch)
     remi_bat = scripts_dir / "launch-remi.bat"
     remi_bat_content = """@echo off
-title Remi Voice Assistant
+:: ===================================================================
+:: Remi Browser Voice Controller
+:: Publisher: GAURAV
+:: Copyright (c) 2026 GAURAV. All rights reserved.
+:: ===================================================================
+title Remi Voice Assistant - Publisher: GAURAV
+cd /d "%~dp0\\.."
 echo Starting Remi Browser Voice Controller (Ctrl+Alt+B)...
 python -m remi start
 if %errorlevel% neq 0 (
+    echo.
+    echo Remi encountered an error. Running diagnostics...
+    python -m remi doctor
     pause
 )
 """
@@ -154,10 +164,19 @@ if %errorlevel% neq 0 (
     # 2. Voice Trans Dictation Launcher (Windows batch)
     dict_bat = scripts_dir / "launch-dictation.bat"
     dict_bat_content = """@echo off
-title Voice Trans Dictation
+:: ===================================================================
+:: Voice Trans Push-to-Talk Dictation
+:: Publisher: GAURAV
+:: Copyright (c) 2026 GAURAV. All rights reserved.
+:: ===================================================================
+title Voice Trans Dictation - Publisher: GAURAV
+cd /d "%~dp0\\.."
 echo Starting Voice Trans Push-to-Talk Dictation (Ctrl+Alt+Space)...
 python -m remi dictation
 if %errorlevel% neq 0 (
+    echo.
+    echo Voice Trans encountered an error. Running diagnostics...
+    python -m remi doctor
     pause
 )
 """
@@ -167,8 +186,19 @@ if %errorlevel% neq 0 (
     # 3. Setup / Doctor (Windows batch)
     setup_bat = scripts_dir / "setup.bat"
     setup_bat_content = """@echo off
-title Remi Setup Wizard
-python -m remi setup
+:: ===================================================================
+:: Remi Suite Setup
+:: Publisher: GAURAV
+:: Copyright (c) 2026 GAURAV. All rights reserved.
+:: ===================================================================
+title Remi Setup Wizard - Publisher: GAURAV
+cd /d "%~dp0\\.."
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
+if %errorlevel% neq 0 (
+    echo.
+    echo PowerShell setup failed. Falling back to python setup...
+    python -m remi setup
+)
 pause
 """
     setup_bat.write_text(setup_bat_content, encoding="utf-8")

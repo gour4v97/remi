@@ -1,11 +1,23 @@
 # =====================================================================
 #  Remi Suite - Automated Windows Setup & Desktop Shortcut Installer
+#  Publisher: GAURAV
 # =====================================================================
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "         Remi Voice AI Suite - Windows Setup              " -ForegroundColor Cyan
+Write-Host "         Publisher: GAURAV                                " -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
+
+# 0. Configure Verified Publisher (GAURAV)
+$certScript = Join-Path $PSScriptRoot "setup-certificate.ps1"
+if (Test-Path $certScript) {
+    try {
+        & $certScript -PublisherName "GAURAV"
+    } catch {
+        Write-Host "Publisher certificate setup note: $($_.Exception.Message)" -ForegroundColor Gray
+    }
+}
 
 # 1. Check Python
 $pythonCmd = Get-Command "python" -ErrorAction SilentlyContinue

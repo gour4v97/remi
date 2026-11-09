@@ -5,6 +5,9 @@ from typing import Final
 APP_NAME: Final[str] = "remi"
 APP_DISPLAY_NAME: Final[str] = "Remi Voice Assistant"
 APP_VERSION: Final[str] = "0.2.0"
+APP_PUBLISHER: Final[str] = "GAURAV"
+APP_AUTHOR: Final[str] = "GAURAV"
+APP_COPYRIGHT: Final[str] = "Copyright (c) 2026 GAURAV. All rights reserved."
 
 APP_BROWSER_ID: Final[str] = "remi-py"
 APP_DICTATION_ID: Final[str] = "voice-trans-py"
