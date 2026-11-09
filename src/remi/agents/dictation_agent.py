@@ -10,7 +10,7 @@ from typing import Any
 
 try:
     import pystray
-except ImportError:
+except Exception:
     pystray = None
 
 from remi.agents._base import BaseAgent

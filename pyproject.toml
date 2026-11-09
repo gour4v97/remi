@@ -71,8 +71,12 @@ Issues = "https://github.com/gour4v97/remi/issues"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"remi.skills.builtin" = ["*.toml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 python_files = ["test_*.py"]
 addopts = "-v"
 

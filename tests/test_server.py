@@ -15,11 +15,11 @@ from remi.server import start_server
 class TestServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.port = 8789
-        cls.server = start_server(host="127.0.0.1", port=cls.port)
+        cls.server = start_server(host="127.0.0.1", port=0)
+        cls.port = cls.server.server_address[1]
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     @classmethod
     def tearDownClass(cls):

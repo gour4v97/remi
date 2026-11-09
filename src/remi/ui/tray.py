@@ -8,13 +8,13 @@ from typing import Any, Callable
 
 try:
     import keyboard
-except ImportError:
+except Exception:
     keyboard = None
 
 try:
     import pystray
     from PIL import Image, ImageDraw
-except ImportError:
+except Exception:
     pystray = None
     Image = None
     ImageDraw = None
