@@ -240,6 +240,38 @@ def cmd_llm_ask(prompt: str, model: str | None):
         sys.exit(1)
 
 
+@main.group(name="skill")
+def cmd_skill():
+    """Manage modular and custom user skills."""
+    pass
+
+
+@cmd_skill.command(name="list")
+def cmd_skill_list():
+    """List all registered skills and their voice triggers."""
+    from remi.skills import SkillManager, user_skills_dir
+
+    mgr = SkillManager()
+    skills = mgr.list_skills()
+    click.echo(f"Skills discovered ({len(skills)} active):")
+    for s in skills:
+        trigs = ", ".join(f"'{t}'" for t in s.triggers[:3])
+        if len(s.triggers) > 3:
+            trigs += f", +{len(s.triggers) - 3} more"
+        status = "enabled" if s.enabled else "disabled"
+        click.echo(f"  • {s.name:20} [{status:8}] Triggers: {trigs}")
+    click.echo(f"\nUser skills path: {user_skills_dir()}")
+
+
+@cmd_skill.command(name="path")
+def cmd_skill_path():
+    """Display the directory where custom skills (.toml) can be added."""
+    from remi.skills import user_skills_dir
+    p = user_skills_dir()
+    p.mkdir(parents=True, exist_ok=True)
+    click.echo(str(p))
+
+
 @main.command(name="autostart")
 @click.argument("action", default="status", type=click.Choice(["on", "off", "status"]))
 @click.option("--app", default=APP_BROWSER_ID, type=click.Choice([APP_BROWSER_ID, APP_DICTATION_ID]))

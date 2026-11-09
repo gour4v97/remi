@@ -1,0 +1,11 @@
+name = "hacker_news"
+description = "Browse or search tech discussions on Hacker News"
+triggers = [
+    "hacker news", "open hacker news", "hn search", "ycombinator"
+]
+
+[action]
+type = "open_url"
+url = "https://news.ycombinator.com"
+search_url = "https://hn.algolia.com/?q={query}"
+spoken = "opening hacker news"

@@ -1,0 +1,13 @@
+name = "developer_tools"
+description = "Quick navigation to developer repositories and documentation"
+triggers = [
+    "open hugging face", "huggingface", "hugging face kholo",
+    "open stack overflow", "stackoverflow", "stackoverflow kholo",
+    "open arxiv", "arxiv search"
+]
+
+[action]
+type = "open_url"
+url = "https://huggingface.co"
+search_url = "https://huggingface.co/models?search={query}"
+spoken = "opening developer portal"

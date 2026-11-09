@@ -290,6 +290,16 @@ def run(text: str, cfg: dict) -> Outcome:
     if _looks_like_domain(t):
         return _open(cfg, "https://" + t, f"opening {t}")
 
+    # Check registered modular skills (OpenJarvis pattern)
+    try:
+        from remi.skills import SkillManager
+        mgr = SkillManager()
+        handled, spoken, detail = mgr.match_and_execute(t, cfg)
+        if handled:
+            return Outcome(True, spoken, detail)
+    except Exception:
+        pass
+
     # Local SLM/LLM Intent Resolution Fallback (OpenJarvis pattern)
     if cfg.get("llm_enabled", True):
         try:
