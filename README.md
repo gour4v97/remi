@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.svg" alt="Remi Logo" width="160" />
+
 # 🎙️ Remi Suite
 
 ### *Local-First, Offline Voice Assistant & Dictation Suite for Windows*
@@ -99,10 +101,12 @@ remi --help
 Commands:
   start      Start Remi browser voice controller tray app (Ctrl+Alt+B)
   dictation  Start Voice Trans push-to-talk dictation tray app (Ctrl+Alt+Space)
+  serve      Start Remi local REST API server (port 8765)
   say        Execute a command directly from text (e.g. remi say "open youtube")
   say-audio  Execute a command from a WAV file (e.g. remi say-audio test.wav)
   doctor     Run local system diagnostics (GPU, CUDA, models, browser CDP)
   llm        Manage local SLM/LLM backends (Ollama, LM Studio): status, ask
+  skill      Manage modular custom skills: list, path
   model      Manage models: list, download <name>, download-cuda, set <name>
   history    View recent execution audit history
   autostart  Manage Windows login startup: remi autostart [on|off|status]

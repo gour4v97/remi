@@ -56,30 +56,57 @@ def _key(vk: int, scan: int, flags: int) -> INPUT:
 
 
 def type_text(text: str) -> None:
-    """Type Unicode text into the current foreground window via Win32 SendInput."""
-    if not IS_WINDOWS or user32 is None:
-        logger.info(f"[Mock Text Delivery]: {text}")
+    """Type Unicode text into the current foreground window (Windows, Linux, macOS)."""
+    # 1. Windows: Win32 SendInput Unicode keyboard event
+    if IS_WINDOWS and user32 is not None:
+        time.sleep(0.15)
+        inputs: list[INPUT] = []
+        for ch in text:
+            if ch == "\r":
+                continue
+            if ch == "\n":
+                inputs.append(_key(0x0D, 0, 0))  # VK_RETURN
+                inputs.append(_key(0x0D, 0, KEYEVENTF_KEYUP))
+                continue
+            inputs.append(_key(0, ord(ch), KEYEVENTF_UNICODE))
+            inputs.append(_key(0, ord(ch), KEYEVENTF_UNICODE | KEYEVENTF_KEYUP))
+
+        if not inputs:
+            return
+
+        arr = (INPUT * len(inputs))(*inputs)
+        sent = user32.SendInput(len(inputs), arr, ctypes.sizeof(INPUT))
+        if sent != len(inputs):
+            raise RuntimeError(f"SendInput delivered {sent}/{len(inputs)} - target window may have elevated integrity.")
         return
 
-    time.sleep(0.15)
-    inputs: list[INPUT] = []
-    for ch in text:
-        if ch == "\r":
-            continue
-        if ch == "\n":
-            inputs.append(_key(0x0D, 0, 0))  # VK_RETURN
-            inputs.append(_key(0x0D, 0, KEYEVENTF_KEYUP))
-            continue
-        inputs.append(_key(0, ord(ch), KEYEVENTF_UNICODE))
-        inputs.append(_key(0, ord(ch), KEYEVENTF_UNICODE | KEYEVENTF_KEYUP))
+    # 2. Linux: xdotool or wtype if available
+    import shutil
+    import subprocess
+    if shutil.which("xdotool"):
+        try:
+            subprocess.run(["xdotool", "type", "--clearmodifiers", "--", text], check=True)
+            return
+        except Exception:
+            pass
+    elif shutil.which("wtype"):
+        try:
+            subprocess.run(["wtype", "--", text], check=True)
+            return
+        except Exception:
+            pass
 
-    if not inputs:
-        return
+    # 3. macOS: osascript
+    if shutil.which("osascript"):
+        try:
+            escaped = text.replace('\\', '\\\\').replace('"', '\\"')
+            script = f'tell application "System Events" to keystroke "{escaped}"'
+            subprocess.run(["osascript", "-e", script], check=True)
+            return
+        except Exception:
+            pass
 
-    arr = (INPUT * len(inputs))(*inputs)
-    sent = user32.SendInput(len(inputs), arr, ctypes.sizeof(INPUT))
-    if sent != len(inputs):
-        raise RuntimeError(f"SendInput delivered {sent}/{len(inputs)} - target window may have elevated integrity.")
+    logger.info(f"[Text Delivery fallback]: {text}")
 
 
 def set_clipboard(text: str) -> None:

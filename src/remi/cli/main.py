@@ -40,6 +40,30 @@ def cmd_start(hotkey: str | None):
     agent.start()
 
 
+@main.command(name="serve")
+@click.option("--host", default="127.0.0.1", help="Host interface to bind to")
+@click.option("--port", default=8765, help="Port to listen on (default: 8765)")
+def cmd_serve(host: str, port: int):
+    """Start Remi REST API server (OpenJarvis HTTP bridge)."""
+    from remi.server import start_server
+
+    click.echo(f"Starting Remi HTTP Server at http://{host}:{port}/")
+    click.echo("Endpoints:")
+    click.echo("  GET  /health")
+    click.echo("  POST /v1/command   { \"text\": \"open youtube\" }")
+    click.echo("  GET  /v1/history")
+    click.echo("  GET  /v1/skills")
+    click.echo("  GET  /v1/llm")
+    click.echo("Press Ctrl+C to stop.")
+
+    server = start_server(host=host, port=port)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        click.echo("\nShutting down server...")
+        server.shutdown()
+
+
 @main.command(name="dictation")
 @click.option("--hotkey", help="Override trigger hotkey (default: ctrl+alt+space)")
 def cmd_dictation(hotkey: str | None):
