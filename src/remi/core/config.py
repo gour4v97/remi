@@ -90,10 +90,22 @@ class DictationConfig:
 
 
 @dataclass
+class LLMConfig:
+    """Local SLM/LLM intent resolution settings."""
+    enabled: bool = True
+    backend: str = "auto"              # "auto", "ollama", "openai_compat", "mock"
+    endpoint: str = "http://127.0.0.1:11434"
+    model: str = "qwen2.5:0.5b"
+    timeout_seconds: int = 12
+    temperature: float = 0.2
+
+
+@dataclass
 class RemiConfig:
     """Unified application configuration."""
     app: str = APP_BROWSER_ID
     engine: EngineConfig = field(default_factory=EngineConfig)
+    llm: LLMConfig = field(default_factory=LLMConfig)
     browser: BrowserConfig = field(default_factory=BrowserConfig)
     dictation: DictationConfig = field(default_factory=DictationConfig)
 
@@ -112,6 +124,11 @@ DEFAULTS: dict[str, Any] = {
     "auto_launch_browser": True,
     "browser_profile": "remi",
     "max_recording_seconds": 120,
+    "llm_enabled": True,
+    "llm_backend": "auto",
+    "llm_endpoint": "http://127.0.0.1:11434",
+    "llm_model": "qwen2.5:0.5b",
+    "llm_timeout": 12,
 }
 
 

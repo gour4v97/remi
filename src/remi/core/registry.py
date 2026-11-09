@@ -76,3 +76,7 @@ class SpeechRegistry(RegistryBase):
 
 class TTSRegistry(RegistryBase):
     """Registry for Text-to-Speech synthesis engines (e.g. sapi, mock)."""
+
+
+class SkillRegistry(RegistryBase):
+    """Registry for pluggable user skills and custom voice workflows."""

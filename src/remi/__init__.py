@@ -12,6 +12,7 @@ from remi.core.registry import (
     AgentRegistry,
     EngineRegistry,
     RegistryBase,
+    SkillRegistry,
     SpeechRegistry,
     ToolRegistry,
     TTSRegistry,
@@ -29,4 +30,5 @@ __all__ = [
     "ToolRegistry",
     "SpeechRegistry",
     "TTSRegistry",
+    "SkillRegistry",
 ]

@@ -8,6 +8,14 @@ asr_port = 9177
 language = "hinglish"
 device = "auto"                    # "auto" detects NVIDIA CUDA, falls back to CPU
 
+[llm]
+enabled = true                     # Auto-resolves unknown voice queries with local SLM/LLM
+backend = "auto"                   # "auto" probes Ollama (11434), LM Studio (1234), llama.cpp (8080)
+endpoint = "http://127.0.0.1:11434"
+model = "qwen2.5:0.5b"             # Fast local Small Language Model
+timeout_seconds = 12
+temperature = 0.2
+
 [browser]
 hotkey = "ctrl+alt+b"
 cdp_port = 9222

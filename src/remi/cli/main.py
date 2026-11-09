@@ -109,6 +109,11 @@ def cmd_doctor():
     click.echo(f"Browser exe    : {browser_exe or 'NOT FOUND'}")
     cdp_up = browser.is_cdp_up(cfg["cdp_port"])
     click.echo(f"Browser CDP    : {'ACTIVE' if cdp_up else 'DOWN'} on port {cfg['cdp_port']}")
+
+    # Local SLM/LLM status
+    from remi.engine.llm import auto_detect_llm
+    llm = auto_detect_llm()
+    click.echo(f"Local SLM/LLM  : {llm.__class__.__name__} ({llm.model}) - READY" if llm else "Local SLM/LLM  : Offline (Ollama / LM Studio)")
     click.echo("================================")
 
 
@@ -166,6 +171,73 @@ def cmd_model(action: str, target: str | None):
         return
 
     click.echo("Usage: remi model [list | download <name> | download-cuda | <name>]")
+
+
+@main.group(name="llm")
+def cmd_llm():
+    """Manage and query local Small Language Models (Ollama, LM Studio, llama.cpp)."""
+    pass
+
+
+@cmd_llm.command(name="status")
+def cmd_llm_status():
+    """Check status of local LLM/SLM inference engines on localhost."""
+    from remi.engine.llm import OllamaEngine, OpenAICompatEngine, auto_detect_llm
+
+    click.echo("=== Local LLM / SLM Diagnostics ===")
+    
+    # 1. Ollama
+    ollama = OllamaEngine()
+    ollama_up = ollama.is_available()
+    click.echo(f"Ollama (port 11434)    : {'ONLINE' if ollama_up else 'Offline'}")
+    if ollama_up:
+        models = ollama.list_models()
+        click.echo(f"  Installed models     : {', '.join(models) if models else 'None found'}")
+
+    # 2. LM Studio
+    lmstudio = OpenAICompatEngine(endpoint="http://127.0.0.1:1234/v1")
+    lm_up = lmstudio.is_available()
+    click.echo(f"LM Studio (port 1234)  : {'ONLINE' if lm_up else 'Offline'}")
+    if lm_up:
+        models = lmstudio.list_models()
+        click.echo(f"  Loaded models        : {', '.join(models) if models else 'None'}")
+
+    # 3. llama.cpp
+    llamacpp = OpenAICompatEngine(endpoint="http://127.0.0.1:8080/v1")
+    llama_up = llamacpp.is_available()
+    click.echo(f"llama.cpp (port 8080)  : {'ONLINE' if llama_up else 'Offline'}")
+
+    active = auto_detect_llm()
+    click.echo("------------------------------------")
+    if active:
+        click.echo(f"Default Active Engine  : {active.__class__.__name__} ({active.model})")
+    else:
+        click.echo("Default Active Engine  : None (Run 'ollama serve' or start LM Studio)")
+    click.echo("====================================")
+
+
+@cmd_llm.command(name="ask")
+@click.argument("prompt")
+@click.option("--model", default=None, help="Model name override")
+def cmd_llm_ask(prompt: str, model: str | None):
+    """Ask a question directly to the active local LLM."""
+    from remi.engine.llm import auto_detect_llm
+
+    engine = auto_detect_llm()
+    if not engine:
+        click.echo("Error: No local LLM found. Please start Ollama, LM Studio, or llama.cpp.", err=True)
+        sys.exit(1)
+
+    if model:
+        engine.model = model
+
+    click.echo(f"Querying [{engine.model}] on {engine.__class__.__name__}...")
+    try:
+        res = engine.generate(prompt)
+        click.echo(f"\n{res.content}")
+    except Exception as ex:
+        click.echo(f"Generation failed: {ex}", err=True)
+        sys.exit(1)
 
 
 @main.command(name="autostart")

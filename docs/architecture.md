@@ -47,9 +47,11 @@ flowchart TD
 ---
 
 ## 1. Engine Pillar (`src/remi/engine/`)
-Provides local offline speech-to-text inference:
+Provides local offline speech-to-text and language model intelligence:
 - **`WhisperCppEngine`**: Self-bootstrapping whisper.cpp HTTP daemon. The server loads model weights once and stays warm in memory. Transcriptions complete in ~0.3s on NVIDIA CUDA GPUs.
-- **Auto-Discovery (`detect_environment`)**: Automatically detects NVIDIA GPUs, CUDA build presence, downloaded GGML models, and local whisper servers.
+- **`Local SLM/LLM Engine` (`OllamaEngine`, `OpenAICompatEngine`)**: Pluggable inference backends connecting to Ollama, LM Studio, llama.cpp, or vLLM on localhost.
+- **`IntentResolver`**: Automatic fallback for complex or conversational speech commands. Classifies user intent into structured JSON actions (`open_url`, `search`, `speak`) when grammar rules do not match.
+- **Auto-Discovery (`detect_environment`, `auto_detect_llm`)**: Automatically detects NVIDIA GPUs, CUDA build presence, downloaded GGML models, whisper servers, and local LLMs.
 - **Fail-Safe Fallback**: If the HTTP server is unreachable or fails to boot, it falls back seamlessly to the one-shot `whisper-cli.exe`.
 
 ## 2. Speech Pillar (`src/remi/speech/`)

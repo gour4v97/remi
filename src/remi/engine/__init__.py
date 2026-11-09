@@ -1,6 +1,15 @@
 """Remi Engine subpackage (ASR & Hardware detection)."""
 from remi.engine._base import BaseASREngine
 from remi.engine._discovery import HardwareSpec, detect_environment
+from remi.engine.llm import (
+    BaseLLMEngine,
+    IntentResolver,
+    LLMResponse,
+    MockLLMEngine,
+    OllamaEngine,
+    OpenAICompatEngine,
+    auto_detect_llm,
+)
 from remi.engine.whisper_cpp import (
     CUDA_DIR,
     CUDA_ZIP_URL,
@@ -22,6 +31,13 @@ from remi.engine.whisper_cpp import (
 __all__ = [
     "BaseASREngine",
     "WhisperCppEngine",
+    "BaseLLMEngine",
+    "OllamaEngine",
+    "OpenAICompatEngine",
+    "MockLLMEngine",
+    "IntentResolver",
+    "LLMResponse",
+    "auto_detect_llm",
     "HardwareSpec",
     "detect_environment",
     "ensure_binaries",

@@ -290,6 +290,27 @@ def run(text: str, cfg: dict) -> Outcome:
     if _looks_like_domain(t):
         return _open(cfg, "https://" + t, f"opening {t}")
 
+    # Local SLM/LLM Intent Resolution Fallback (OpenJarvis pattern)
+    if cfg.get("llm_enabled", True):
+        try:
+            from remi.engine.llm import IntentResolver
+            resolver = IntentResolver(cfg=cfg)
+            if resolver.is_ready():
+                res = resolver.resolve(text)
+                if res and isinstance(res, dict):
+                    action = res.get("action", "speak")
+                    spoken = res.get("spoken", "done")
+                    detail = res.get("detail", action)
+                    if action == "open_url" and res.get("url"):
+                        return _open(cfg, res["url"], spoken)
+                    elif action == "search" and res.get("search_query"):
+                        q = res["search_query"]
+                        return _open(cfg, f"https://www.google.com/search?q={urllib.parse.quote(q)}", spoken)
+                    elif action == "speak":
+                        return Outcome(True, spoken, detail)
+        except Exception:
+            pass
+
     return Outcome(False, f"didn't understand: {t}", "unrecognized command")
 
 

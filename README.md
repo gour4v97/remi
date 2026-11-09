@@ -102,6 +102,7 @@ Commands:
   say        Execute a command directly from text (e.g. remi say "open youtube")
   say-audio  Execute a command from a WAV file (e.g. remi say-audio test.wav)
   doctor     Run local system diagnostics (GPU, CUDA, models, browser CDP)
+  llm        Manage local SLM/LLM backends (Ollama, LM Studio): status, ask
   model      Manage models: list, download <name>, download-cuda, set <name>
   history    View recent execution audit history
   autostart  Manage Windows login startup: remi autostart [on|off|status]
