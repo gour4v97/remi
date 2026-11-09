@@ -44,7 +44,12 @@ def ensure_binaries() -> None:
     with _bin_lock:
         if WHISPER_CLI.exists() and WHISPER_SERVER.exists():
             return
-        config.ensure_dirs()
+        try:
+            config.ensure_dirs()
+            config.BIN_DIR.mkdir(parents=True, exist_ok=True)
+        except OSError as ex:
+            logger.warning(f"Could not create BIN directory ({ex})")
+            return
         logger.info(f"Downloading whisper.cpp binaries (~2 MB) from {WHISPER_ZIP_URL} ...")
         zip_path = config.BIN_DIR / "whisper-bin.zip"
         urllib.request.urlretrieve(WHISPER_ZIP_URL, zip_path)
@@ -72,8 +77,12 @@ def ensure_cuda() -> bool:
         return True
     if not has_nvidia():
         return False
-    config.ensure_dirs()
-    CUDA_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        config.ensure_dirs()
+        CUDA_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError as ex:
+        logger.warning(f"Could not create CUDA directory ({ex})")
+        return False
     logger.info("Downloading whisper.cpp CUDA build (~250 MB) for GPU transcription ...")
     zip_path = CUDA_DIR / "cuda.zip"
     try:

@@ -56,14 +56,32 @@ flowchart LR
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start & One-Click Setup
 
-### 1. Installation
+### One-Click Installer (Windows)
+
+Simply double-click [`scripts/setup.bat`](scripts/setup.bat) or run in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+```
+
+This will automatically:
+- Install Python dependencies
+- Run the interactive hardware & model wizard
+- Create double-clickable **Remi Browser** and **Voice Trans** shortcuts on your Desktop!
+
+---
+
+### Manual Installation & Setup Wizard
 
 ```bash
 git clone https://github.com/gour4v97/remi.git
 cd remi
 pip install -e .
+
+# Launch interactive setup wizard (models, CUDA, shortcuts)
+remi setup
 ```
 
 ### 2. Download Whisper Model
@@ -99,6 +117,8 @@ Remi includes a comprehensive Click-based CLI:
 remi --help
 
 Commands:
+  setup      Launch interactive hardware & model setup wizard
+  init       Alias for 'remi setup' (OpenJarvis style)
   start      Start Remi browser voice controller tray app (Ctrl+Alt+B)
   dictation  Start Voice Trans push-to-talk dictation tray app (Ctrl+Alt+Space)
   serve      Start Remi local REST API server (port 8765)

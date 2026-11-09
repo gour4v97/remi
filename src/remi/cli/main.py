@@ -26,6 +26,22 @@ def main():
     pass
 
 
+@main.command(name="setup")
+@click.option("--non-interactive", is_flag=True, help="Run without interactive confirmation prompts")
+def cmd_setup(non_interactive: bool):
+    """Run interactive setup wizard for Remi (models, shortcuts, hardware)."""
+    from remi.cli.setup import run_setup
+    run_setup(non_interactive=non_interactive)
+
+
+@main.command(name="init")
+@click.option("--non-interactive", is_flag=True, help="Run without interactive confirmation prompts")
+def cmd_init(non_interactive: bool):
+    """Alias for 'remi setup' (OpenJarvis style)."""
+    from remi.cli.setup import run_setup
+    run_setup(non_interactive=non_interactive)
+
+
 @main.command(name="start")
 @click.option("--hotkey", help="Override trigger hotkey (default: ctrl+alt+b)")
 def cmd_start(hotkey: str | None):
