@@ -1,53 +1,186 @@
-# Remi Suite
+<div align="center">
 
-Two Windows voice apps by **gour4v97**, in pure **Python**, sharing one local voice engine:
+# 🎙️ Remi Suite
 
-| App | What it does | Trigger |
+### *Local-First, Offline Voice Assistant & Dictation Suite for Windows*
+
+[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6.svg)](https://microsoft.com/windows)
+[![Engine](https://img.shields.io/badge/Engine-whisper.cpp%20CUDA-green.svg)](https://github.com/ggerganov/whisper.cpp)
+[![Architecture](https://img.shields.io/badge/Architecture-OpenJarvis%20Pillars-purple.svg)](docs/architecture.md)
+
+**Control your browser and dictate into any application using your voice in English, Hindi, and Hinglish.**  
+*Everything runs 100% locally on your machine — your voice data never leaves your device.*
+
+[Getting Started](docs/getting-started.md) • [Architecture](docs/architecture.md) • [Voice Commands](docs/commands.md) • [Changelog](CHANGELOG.md)
+
+</div>
+
+---
+
+## ⚡ Overview
+
+**Remi Suite** provides two zero-cloud voice applications powered by a shared, persistent local inference engine:
+
+| Application | Trigger | Description | Output |
+|---|---|---|---|
+| **Remi Browser** 🌐 | `Ctrl+Alt+B` | Voice-controlled web browser via Chrome DevTools Protocol (CDP) | Navigation, tabs, scrolling, clicks, media + spoken confirmation |
+| **Voice Trans** 🎙️ | `Ctrl+Alt+Space` | Push-to-talk universal dictation into any focused window | Types text via Win32 Unicode `SendInput` or copies to clipboard |
+
+```
+[HotKey] ──> 🎤 16kHz Mic ──> 🧠 Persistent whisper.cpp (CUDA: ~0.3s) ──> 🔤 Hinglish Normalizer ──> 🖥️ Action / Typing ──> 🔊 Spoken Confirmation
+```
+
+---
+
+## 🏛️ Architecture: 5 Composable Pillars
+
+Modeled after the composable architecture of Stanford's **OpenJarvis**, Remi is decoupled into 5 distinct pillars:
+
+```mermaid
+flowchart LR
+    A["1. Speech<br/>(Mic & Translit)"] --> B["2. Engine<br/>(whisper.cpp)"]
+    B --> C["3. Tools<br/>(CDP & Delivery)"]
+    C --> D["4. Agents<br/>(Browser & Dictation)"]
+    E["5. Core<br/>(Registries & EventBus)"] -.-> A & B & C & D
+```
+
+1. **`speech`** (`src/remi/speech/`): 16 kHz audio capture (`MicCapture`), Devanagari-to-Roman transliteration (`to_roman`), and low-latency SAPI TTS synthesis.
+2. **`engine`** (`src/remi/engine/`): Persistent HTTP `whisper.cpp` server with automatic NVIDIA CUDA acceleration and one-shot CLI fallback.
+3. **`tools`** (`src/remi/tools/`): Chrome DevTools Protocol automation client, 40+ command natural grammar router, Win32 SendInput Unicode keyboard delivery, and JSONL audit logging.
+4. **`agents`** (`src/remi/agents/`): User-facing Windows system tray agents (`BrowserVoiceAgent`, `DictationAgent`).
+5. **`core`** (`src/remi/core/`): Generic decorator-based registry (`RegistryBase`), decoupled pub/sub event bus (`EventBus`), and typed TOML configurations.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Installation
+
+```bash
+git clone https://github.com/gour4v97/remi.git
+cd remi
+pip install -e .
+```
+
+### 2. Download Whisper Model
+
+Remi downloads self-contained `whisper.cpp` binaries automatically on first use. Download the recommended model weights:
+
+```bash
+# Download recommended balanced model (~574 MB)
+remi model download large-v3-turbo-q5_0
+
+# (Optional) If you have an NVIDIA GPU, download the CUDA build for ~80x speedup:
+remi model download-cuda
+```
+
+### 3. Run Applications
+
+```bash
+# Launch Remi Browser Voice Controller (Ctrl+Alt+B)
+remi start
+
+# Launch Voice Trans Dictation Tray App (Ctrl+Alt+Space)
+remi dictation
+# or: voice-trans
+```
+
+---
+
+## ⌨️ CLI Reference
+
+Remi includes a comprehensive Click-based CLI:
+
+```bash
+remi --help
+
+Commands:
+  start      Start Remi browser voice controller tray app (Ctrl+Alt+B)
+  dictation  Start Voice Trans push-to-talk dictation tray app (Ctrl+Alt+Space)
+  say        Execute a command directly from text (e.g. remi say "open youtube")
+  say-audio  Execute a command from a WAV file (e.g. remi say-audio test.wav)
+  doctor     Run local system diagnostics (GPU, CUDA, models, browser CDP)
+  model      Manage models: list, download <name>, download-cuda, set <name>
+  history    View recent execution audit history
+  autostart  Manage Windows login startup: remi autostart [on|off|status]
+```
+
+### Diagnostics with `remi doctor`
+
+Verify your local system setup with a single command:
+
+```bash
+remi doctor
+```
+
+```text
+=== Remi System Health Check ===
+Python version : 3.12.3
+Config path    : C:\Users\User\AppData\Roaming\remi-suite-py\remi-py.toml
+NVIDIA GPU     : Detected
+CUDA build     : Installed
+whisper-cli    : Installed
+whisper-server : Installed
+Active model   : large-v3-turbo-q5_0 -> FOUND
+Browser exe    : C:\Program Files\Google\Chrome\Application\chrome.exe
+Browser CDP    : ACTIVE on port 9222
+================================
+```
+
+---
+
+## 🎯 Command Grammar & Hinglish Support
+
+Remi supports natural phrasing in **English**, **Hindi**, and **Hinglish**:
+
+```text
+"open youtube"           -> Opens YouTube
+"youtube lofi beats"     -> Searches YouTube for lo-fi beats
+"scroll down"            -> Scrolls page down 600px
+"niche jao"              -> Scrolls page down (Hinglish)
+"tab band karo"          -> Closes active tab
+"naya tab kholo"         -> Opens new tab
+"gaana chalao"           -> Plays media on current page
+"volume badhao"          -> Increases volume by 10%
+"what time is it"        -> Spoken offline time answer
+"aaj ki tarikh"          -> Spoken offline date answer
+```
+
+See [docs/commands.md](docs/commands.md) for the complete list of 40+ supported commands.
+
+---
+
+## ⚡ Performance: CPU vs NVIDIA GPU
+
+Remi uses a **persistent in-memory whisper.cpp HTTP server** so the model remains warm in RAM/VRAM:
+
+| Mode | Hardware | Transcription Latency |
 |---|---|---|
-| **Voice Trans** 🎙️ | Push-to-talk dictation — speak, and the transcript is typed into whatever app has focus | `Ctrl+Alt+Space` |
-| **Remi Browser** 🌐 | Voice-controlled browser — 40+ commands in English/Hindi/Hinglish, with spoken confirmations | `Ctrl+Alt+B` |
+| **NVIDIA CUDA** 🚀 | RTX 3050 / 4050 or higher | **~0.3 seconds** |
+| **CPU Fallback** | Intel / AMD Multi-Core | **~10 - 25 seconds** |
 
-```
-[hotkey] → speak → [hotkey] → 🧠 local Whisper (GPU: ~0.3 s) → 🖥️ typed / browser action → 🔊 spoken confirmation
-```
+---
 
-Everything runs locally — your voice never leaves the machine.
+## 🛠️ Development & Testing
 
-## Performance
+```bash
+# Install with dev dependencies
+make dev-install
 
-- A **persistent whisper.cpp server** loads the model once and stays warm (both apps share it)
-- On NVIDIA GPUs it automatically uses the **CUDA build**: transcription drops from ~30 s (CPU) to **~0.3 s**
-- No NVIDIA GPU? It transparently falls back to the CPU build — still fully offline
-- Cached SAPI TTS engine, so confirmations don't lag either
+# Run test suite
+make test
 
-## Setup (once)
+# Format code
+make format
 
-```powershell
-py -m pip install -r python/requirements.txt
-```
-
-The whisper.cpp binaries + CUDA build download themselves into `%LOCALAPPDATA%\remi-suite-py\` on first use, and models are borrowed from an existing `%LOCALAPPDATA%\voice-trans\models` folder (or: `py voice_trans.py model download large-v3-turbo-q5_0`).
-
-## Run
-
-```powershell
-cd python
-py voice_trans.py        # dictation tray app    (Ctrl+Alt+Space)
-py remi.py               # browser tray app      (Ctrl+Alt+B)
-
-py voice_trans.py autostart on     # start with Windows
-py remi.py autostart on
+# Lint code
+make lint
 ```
 
-Full command lists: [`python/README.md`](python/README.md).
+---
 
-## Repository layout
+## 📄 License
 
-```
-python/          the suite (voicecore engine + two apps) — see its README
-testdata/        sample WAVs for say-audio / pipeline testing
-```
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.

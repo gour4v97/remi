@@ -1,0 +1,16 @@
+# Example preset: Dedicated push-to-talk dictation profile
+# Optimized for high-throughput speech-to-text into Word, VS Code, Slack, or any editor
+
+[engine]
+type = "whisper_cpp"
+local_model = "large-v3-turbo-q5_0"
+asr_port = 9177
+language = "hinglish"
+device = "cuda"
+
+[dictation]
+hotkey = "ctrl+alt+space"
+delivery_mode = "guarded"          # Reverts to clipboard if focused window changes while speaking
+writing_mode = "smart"
+language = "hinglish"
+max_recording_seconds = 180

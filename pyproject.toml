@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "remi-suite"
+version = "0.2.0"
+description = "Local-first, offline voice assistant and dictation suite for Windows (powered by whisper.cpp and CDP)"
+readme = "README.md"
+authors = [
+    { name = "gour4v97" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = [
+    "voice-assistant",
+    "speech-recognition",
+    "whisper",
+    "whisper-cpp",
+    "dictation",
+    "browser-automation",
+    "hinglish",
+    "cdp",
+    "offline-ai"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Adaptive Technologies"
+]
+dependencies = [
+    "click>=8.1.0",
+    "sounddevice>=0.4.6",
+    "numpy>=1.26.0",
+    "keyboard>=0.13.5",
+    "pystray>=0.19.5",
+    "Pillow>=10.0.0",
+    "pyperclip>=1.8.2",
+    "websocket-client>=1.7.0",
+    "pyttsx3>=2.90"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "mypy>=1.6.0"
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0"
+]
+
+[project.scripts]
+remi = "remi.cli.main:main"
+voice-trans = "remi.cli.main:voice_trans"
+
+[project.urls]
+Homepage = "https://github.com/gour4v97/remi"
+Repository = "https://github.com/gour4v97/remi"
+Issues = "https://github.com/gour4v97/remi/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

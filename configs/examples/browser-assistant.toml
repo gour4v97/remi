@@ -1,0 +1,16 @@
+# Example preset: Dedicated browser voice controller profile
+# Controls Chrome/Edge via Chrome DevTools Protocol with spoken confirmations
+
+[engine]
+type = "whisper_cpp"
+local_model = "large-v3-turbo-q5_0"
+asr_port = 9177
+language = "hinglish"
+device = "cuda"
+
+[browser]
+hotkey = "ctrl+alt+b"
+cdp_port = 9222
+auto_launch_browser = true
+browser_profile = "remi"
+voice_feedback = true
