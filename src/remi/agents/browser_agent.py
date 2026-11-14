@@ -76,12 +76,22 @@ class BrowserVoiceAgent(BaseAgent):
 
             if self.tray:
                 self.tray.set_state("thinking", self.cfg.get("hotkey", DEFAULT_HOTKEY_BROWSER))
+            try:
+                from remi.ui.overlay import StatusOverlay
+                StatusOverlay.get_instance().set_state("thinking", text)
+            except Exception:
+                pass
 
             outcome = router.run(text, self.cfg)
             timer.mark("parsed")
 
             if self.tray:
                 self.tray.set_state("idle", self.cfg.get("hotkey", DEFAULT_HOTKEY_BROWSER))
+            try:
+                from remi.ui.overlay import StatusOverlay
+                StatusOverlay.get_instance().set_state("done" if outcome.ok else "error", outcome.spoken)
+            except Exception:
+                pass
 
             duration_ms = int((time.time() - started) * 1000)
             timer.mark("action_done")
@@ -146,6 +156,11 @@ class BrowserVoiceAgent(BaseAgent):
                 self._state["capturing"] = mic
                 if self.tray:
                     self.tray.set_state("recording", self.cfg.get("hotkey", DEFAULT_HOTKEY_BROWSER))
+                try:
+                    from remi.ui.overlay import StatusOverlay
+                    StatusOverlay.get_instance().set_state("listening", "Listening to voice...")
+                except Exception:
+                    pass
                 return
 
             cap = self._state["capturing"]
