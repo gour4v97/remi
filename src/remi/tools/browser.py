@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import subprocess
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -39,7 +40,6 @@ def find_browser_exe() -> str | None:
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
         r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
         str(config.LOCALAPPDATA / r"Google\Chrome\Application\chrome.exe"),
-        # Linux / WSL fallback
         "/usr/bin/google-chrome",
         "/usr/bin/chromium-browser",
         "/usr/bin/microsoft-edge",
@@ -104,10 +104,112 @@ def close_tab(port: int, tab_id: str) -> None:
         r.read()
 
 
+class PersistentCDPSession:
+    """Persistent WebSocket session for CDP commands to avoid reconnect overhead."""
+
+    def __init__(self, port: int, timeout: float = 6.0):
+        self.port = port
+        self.timeout = timeout
+        self._ws = None
+        self._ws_url: str | None = None
+        self._lock = threading.Lock()
+        self._msg_id = 0
+
+    def _get_active_tab_ws_url(self) -> str | None:
+        pages = tabs(self.port)
+        return pages[0]["webSocketDebuggerUrl"] if pages else None
+
+    def _connect(self) -> bool:
+        if websocket is None:
+            return False
+        ws_url = self._get_active_tab_ws_url()
+        if not ws_url:
+            return False
+        try:
+            self._ws = websocket.create_connection(ws_url, timeout=self.timeout)
+            self._ws_url = ws_url
+            return True
+        except Exception as ex:
+            logger.debug(f"CDP persistent connect failed: {ex}")
+            self._ws = None
+            self._ws_url = None
+            return False
+
+    def _is_alive(self) -> bool:
+        if self._ws is None:
+            return False
+        current_url = self._get_active_tab_ws_url()
+        return current_url == self._ws_url
+
+    def eval(self, js: str) -> str | None:
+        with self._lock:
+            if not self._is_alive():
+                if self._ws:
+                    try:
+                        self._ws.close()
+                    except Exception:
+                        pass
+                self._ws = None
+                if not self._connect():
+                    return None
+
+            self._msg_id += 1
+            msg_id = self._msg_id
+            payload = json.dumps({
+                "id": msg_id,
+                "method": "Runtime.evaluate",
+                "params": {
+                    "expression": js,
+                    "returnByValue": True,
+                    "awaitPromise": True,
+                    "userGesture": True,
+                },
+            })
+            try:
+                self._ws.send(payload)
+                while True:
+                    msg = json.loads(self._ws.recv())
+                    if msg.get("id") == msg_id:
+                        result = msg.get("result", {}).get("result", {})
+                        if "value" in result:
+                            v = result["value"]
+                            return v if isinstance(v, str) else str(v)
+                        if "description" in result:
+                            return result["description"]
+                        return "ok"
+            except Exception as ex:
+                logger.debug(f"CDP persistent eval failed, closing stale connection: {ex}")
+                try:
+                    self._ws.close()
+                except Exception:
+                    pass
+                self._ws = None
+                self._ws_url = None
+                return None
+
+
+_sessions: dict[int, PersistentCDPSession] = {}
+_sessions_lock = threading.Lock()
+
+
 def eval_js(port: int, js: str) -> str | None:
-    """Evaluate arbitrary JavaScript inside the active page tab via WebSocket."""
+    """Evaluate arbitrary JavaScript inside the active page tab via WebSocket.
+    
+    Reuses persistent WebSocket session if available, falling back to one-shot connection.
+    """
     if websocket is None:
         raise RuntimeError("websocket-client is required for eval_js.")
+
+    with _sessions_lock:
+        if port not in _sessions:
+            _sessions[port] = PersistentCDPSession(port)
+        session = _sessions[port]
+
+    res = session.eval(js)
+    if res is not None:
+        return res
+
+    # Fallback to direct ephemeral connection
     pages = tabs(port)
     if not pages:
         return None
