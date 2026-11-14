@@ -25,7 +25,7 @@ voice_feedback = true
 
 [dictation]
 hotkey = "ctrl+alt+space"
-delivery_mode = "type"             # "type", "clipboard", or "guarded"
+delivery_mode = "paste"            # "paste" (fastest via Ctrl+V), "type" (SendInput keys), or "clipboard"
 writing_mode = "smart"             # "smart" applies punctuation capitalization; "verbatim" is raw
 language = "hinglish"
 max_recording_seconds = 120
