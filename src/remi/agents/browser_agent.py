@@ -52,22 +52,38 @@ class BrowserVoiceAgent(BaseAgent):
         self.events = EventBus.get_instance()
 
     def process_audio(self, pcm: bytes) -> router.Outcome:
+        from remi.core.perf import PipelineTimer
+        timer = PipelineTimer()
         started = time.time()
         try:
+            timer.mark("key_up")
+
             if len(pcm) < 9600:
                 raise RuntimeError("Recording too short.")
             if whisper_cpp.peak_amplitude(pcm) <= 32:
                 raise RuntimeError("Silent recording - check microphone selection.")
+            timer.mark("audio_ready")
 
             engine = whisper_cpp.WhisperCppEngine(self.cfg)
             raw_text = engine.transcribe_pcm(pcm, self.cfg["local_model"], "hinglish", self.cfg)
             text = to_roman(raw_text).strip()
             if not text:
                 raise RuntimeError("Empty transcript.")
+            timer.mark("transcribed")
 
             self.events.publish("voice:transcribed", {"text": text, "agent": self.app})
+
+            if self.tray:
+                self.tray.set_state("thinking", self.cfg.get("hotkey", DEFAULT_HOTKEY_BROWSER))
+
             outcome = router.run(text, self.cfg)
+            timer.mark("parsed")
+
+            if self.tray:
+                self.tray.set_state("idle", self.cfg.get("hotkey", DEFAULT_HOTKEY_BROWSER))
+
             duration_ms = int((time.time() - started) * 1000)
+            timer.mark("action_done")
 
             history.append(
                 self.app,
@@ -80,12 +96,19 @@ class BrowserVoiceAgent(BaseAgent):
             )
 
             feedback_enabled = self.cfg.get("voice_feedback", True)
+            timer.mark("tts_start")
             tts.say(outcome.spoken if outcome.ok else f"Sorry. {outcome.spoken}", feedback_enabled)
 
             if not outcome.ok and self.tray:
                 self.tray.notify("Remi", outcome.spoken, error=True)
 
             self.events.publish("command:executed", {"text": text, "outcome": outcome})
+
+            # Log timing — always to file; print table in bench_mode
+            timer.log_to_file()
+            if self.cfg.get("bench_mode", False):
+                timer.print_table()
+
             return outcome
 
         except Exception as ex:

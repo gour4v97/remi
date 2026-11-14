@@ -81,16 +81,22 @@ class DictationAgent(BaseAgent):
         self.events = EventBus.get_instance()
 
     def process_audio(self, pcm: bytes, start_hwnd: int = 0) -> str:
+        from remi.core.perf import PipelineTimer
+        timer = PipelineTimer()
         started = time.time()
         try:
+            timer.mark("key_up")
+
             if len(pcm) < 9600:
                 raise RuntimeError("Recording too short.")
             if whisper_cpp.peak_amplitude(pcm) <= 32:
                 raise RuntimeError("Silent recording - check microphone selection.")
+            timer.mark("audio_ready")
 
             engine = whisper_cpp.WhisperCppEngine(self.cfg)
             lang = self.cfg.get("language", "hinglish")
             text = engine.transcribe_pcm(pcm, self.cfg["local_model"], lang, self.cfg)
+            timer.mark("transcribed")
 
             if lang == "hinglish":
                 text = to_roman(text)
@@ -99,6 +105,7 @@ class DictationAgent(BaseAgent):
 
             if not text.strip():
                 raise RuntimeError("Empty transcript.")
+            timer.mark("parsed")
 
             mode = self.cfg.get("delivery_mode", "type")
             if mode == "clipboard":
@@ -113,6 +120,7 @@ class DictationAgent(BaseAgent):
                 delivery.set_clipboard(text)
                 delivery.type_text(text)
                 detail = "type"
+            timer.mark("action_done")
 
             duration_ms = int((time.time() - started) * 1000)
             history.append(
@@ -120,6 +128,12 @@ class DictationAgent(BaseAgent):
                 {"transcript": text, "detail": detail, "ok": True, "ms": duration_ms},
             )
             self.events.publish("dictation:delivered", {"text": text, "mode": detail})
+
+            # Log timing always; print table in bench_mode
+            timer.log_to_file()
+            if self.cfg.get("bench_mode", False):
+                timer.print_table()
+
             return text
 
         except Exception as ex:

@@ -7,6 +7,7 @@ local_model = "large-v3-turbo-q5_0"
 asr_port = 9177
 language = "hinglish"
 device = "auto"                    # "auto" detects NVIDIA CUDA, falls back to CPU
+bench_mode = false                 # Set to true to print per-stage latency table after each command
 
 [llm]
 enabled = true                     # Auto-resolves unknown voice queries with local SLM/LLM
