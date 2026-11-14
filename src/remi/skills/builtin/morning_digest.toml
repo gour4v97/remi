@@ -1,0 +1,15 @@
+name = "morning_digest"
+description = "Hinglish morning briefing with weather, calendar, and top tech updates"
+triggers = [
+    "morning digest",
+    "morning briefing",
+    "aaj ka digest",
+    "subah ka briefing",
+    "aaj ka plan",
+    "daily digest"
+]
+
+[action]
+type = "open_url"
+url = "https://news.google.com/topstories"
+spoken = "Suprabhat! Aaj ka morning digest khol raha hoon. Today's top updates are ready."

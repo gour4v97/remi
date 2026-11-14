@@ -1,0 +1,12 @@
+name = "system_controls"
+description = "Fast native Windows utilities control via voice"
+triggers = [
+    "open calculator", "calculator kholo", "calc kholo",
+    "open notepad", "notepad kholo",
+    "open task manager", "task manager kholo",
+    "open settings", "windows settings kholo", "settings kholo"
+]
+
+[action]
+type = "system_app"
+spoken = "opening application"

@@ -116,6 +116,31 @@ class SkillManager:
             spoken = act.spoken.replace("{payload}", payload) if "{payload}" in act.spoken else act.spoken
             return True, spoken, f"skill:{skill.name}"
 
+        # Action: system_app
+        if act.action_type == "system_app":
+            import subprocess
+            app_map = {
+                "calculator": "calc.exe",
+                "calc": "calc.exe",
+                "notepad": "notepad.exe",
+                "task manager": "taskmgr.exe",
+                "settings": "start ms-settings:",
+            }
+            exe = "calc.exe"
+            t_lower = payload.lower() if payload else skill.name.lower()
+            for k, v in app_map.items():
+                if k in t_lower or k in act.spoken.lower():
+                    exe = v
+                    break
+            try:
+                if exe.startswith("start "):
+                    subprocess.Popen(exe, shell=True)
+                else:
+                    subprocess.Popen([exe])
+                return True, act.spoken, f"system_app:{exe}"
+            except Exception as ex:
+                return False, "failed to launch app", str(ex)
+
         # Action: speak
         if act.action_type == "speak":
             spoken = act.spoken.replace("{payload}", payload)
