@@ -50,6 +50,7 @@ class BrowserVoiceAgent(BaseAgent):
         self._lock = threading.Lock()
         self.tray: TrayApp | None = None
         self.events = EventBus.get_instance()
+        self._warm_mic: capture.WarmMicCapture | None = None
 
     def process_audio(self, pcm: bytes) -> router.Outcome:
         started = time.time()
@@ -112,13 +113,14 @@ class BrowserVoiceAgent(BaseAgent):
                 return
             if self._state["capturing"] is None:
                 try:
-                    cap = capture.MicCapture()
-                    cap.start()
+                    # Prefer WarmMicCapture (stream stays open between commands)
+                    mic = self._warm_mic if self._warm_mic is not None else capture.MicCapture()
+                    mic.start()
                 except Exception as ex:
                     if self.tray:
                         self.tray.notify("Microphone", str(ex), error=True)
                     return
-                self._state["capturing"] = cap
+                self._state["capturing"] = mic
                 if self.tray:
                     self.tray.set_state("recording", self.cfg.get("hotkey", DEFAULT_HOTKEY_BROWSER))
                 return
@@ -179,6 +181,14 @@ class BrowserVoiceAgent(BaseAgent):
 
     def start(self) -> None:
         whisper_cpp.start_server(self.cfg)
+        # Open warm mic at startup — keeps PortAudio stream alive between commands
+        self._warm_mic = capture.WarmMicCapture()
+        try:
+            self._warm_mic.open()
+            logger.info("WarmMicCapture opened — mic stream will stay warm between commands.")
+        except Exception as ex:
+            logger.warning(f"WarmMicCapture failed to open ({ex}), falling back to MicCapture per command.")
+            self._warm_mic = None
         tray = self.build_tray()
         tray.run()
 
