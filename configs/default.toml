@@ -13,9 +13,13 @@ bench_mode = false                 # Set to true to print per-stage latency tabl
 enabled = true                     # Auto-resolves unknown voice queries with local SLM/LLM
 backend = "auto"                   # "auto" probes Ollama (11434), LM Studio (1234), llama.cpp (8080)
 endpoint = "http://127.0.0.1:11434"
-model = "qwen2.5:0.5b"             # Fast local Small Language Model
+# Recommended for RTX 4050 (6GB VRAM) alongside Whisper:
+#   llama3.2:3b  (default) - fast, strong reasoning, tool-call capable
+#   qwen2.5:3b   - excellent Hinglish understanding
+#   qwen2.5:0.5b - ultra-low latency fallback
+model = "llama3.2:3b"
 timeout_seconds = 12
-temperature = 0.2
+temperature = 0.1
 
 [browser]
 hotkey = "ctrl+alt+b"

@@ -303,8 +303,8 @@ def run(text: str, cfg: dict) -> Outcome:
     # Local SLM/LLM Intent Resolution Fallback (OpenJarvis pattern)
     if cfg.get("llm_enabled", True):
         try:
-            from remi.engine.llm import IntentResolver
-            resolver = IntentResolver(cfg=cfg)
+            from remi.engine.llm import get_resolver
+            resolver = get_resolver(cfg=cfg)
             if resolver.is_ready():
                 res = resolver.resolve(text)
                 if res and isinstance(res, dict):
