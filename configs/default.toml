@@ -34,3 +34,12 @@ delivery_mode = "paste"            # "paste" (fastest via Ctrl+V), "type" (SendI
 writing_mode = "smart"             # "smart" applies punctuation capitalization; "verbatim" is raw
 language = "hinglish"
 max_recording_seconds = 120
+
+[speech]
+vad_enabled = false                # Enable hands-free voice activity detection (auto-stop without PTT)
+vad_silence_seconds = 0.75         # Silence duration to trigger auto-finish (seconds)
+vad_min_speech_seconds = 0.25      # Minimum detected speech required to activate auto-stop
+
+[memory]
+enabled = true                     # SQLite local conversation history and entity recall store
+max_history_turns = 10

@@ -95,6 +95,12 @@ def _open(cfg: dict, url: str, spoken: str) -> Outcome:
     if not ensure_cdp(cfg):
         return Outcome(False, "browser not reachable", f"no CDP on port {cfg.get('cdp_port', 9222)}")
     browser.new_tab(cfg.get("cdp_port", 9222), url)
+    # Store in memory for contextual recall ("open that again", "reopen it")
+    try:
+        from remi.core.memory import get_memory
+        get_memory().remember_entity("last_url", url, spoken)
+    except Exception:
+        pass
     return Outcome(True, spoken, url)
 
 
@@ -143,6 +149,17 @@ def run(text: str, cfg: dict) -> Outcome:
     stripped = re.sub(r"\s+(khol(?:o|a)?(?:\s+do|dena)?|open karo|khol de)$", "", t)
     if stripped != t:
         t = stripped
+
+    # Contextual Memory Commands ("open that again", "reopen it", "wapas kholo")
+    if _is(t, "open that again", "reopen it", "open again", "wapas kholo", "phir se kholo", "dobara kholo"):
+        try:
+            from remi.core.memory import get_memory
+            last = get_memory().recall_entity("last_url")
+            if last and last.get("value"):
+                return _open(cfg, last["value"], f"reopening {last.get('detail', 'last page')}")
+            return Outcome(False, "nothing to reopen", "no previous url in memory")
+        except Exception as ex:
+            return Outcome(False, "memory error", str(ex))
 
     # Tab navigation
     if _is(t, "next tab", "agla tab", "agle tab", "next tab kholo"):
