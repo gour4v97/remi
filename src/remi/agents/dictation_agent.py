@@ -108,7 +108,7 @@ class DictationAgent(BaseAgent):
                 raise RuntimeError("Empty transcript.")
             timer.mark("parsed")
 
-            mode = self.cfg.get("delivery_mode", "type")
+            mode = self.cfg.get("delivery_mode", "paste")
             if mode == "clipboard":
                 delivery.set_clipboard(text)
                 detail = "clipboard"
@@ -117,10 +117,13 @@ class DictationAgent(BaseAgent):
                 detail = "clipboard (guarded fallback)"
                 if self.tray:
                     self.tray.notify("Voice Trans", "Focused window changed - copied to clipboard.")
-            else:
+            elif mode == "type":
                 delivery.set_clipboard(text)
                 delivery.type_text(text)
                 detail = "type"
+            else:
+                delivery.paste_text(text)
+                detail = "paste"
             timer.mark("action_done")
 
             duration_ms = int((time.time() - started) * 1000)
