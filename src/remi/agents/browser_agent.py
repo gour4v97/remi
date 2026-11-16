@@ -161,11 +161,22 @@ class BrowserVoiceAgent(BaseAgent):
                     StatusOverlay.get_instance().set_state("listening", "Listening to voice...")
                 except Exception:
                     pass
+
+                # Launch streaming ASR worker if warm mic is active
+                if isinstance(mic, capture.WarmMicCapture) and self.cfg.get("streaming_transcription", True):
+                    from remi.engine.streaming_asr import StreamingASRWorker
+                    self._streaming_worker = StreamingASRWorker(mic, self.cfg)
+                    self._streaming_worker.start()
+
                 return
 
             cap = self._state["capturing"]
             self._state["capturing"] = None
             self._state["busy"] = True
+
+            if hasattr(self, "_streaming_worker") and self._streaming_worker:
+                self._streaming_worker.stop()
+                self._streaming_worker = None
 
         pcm = cap.stop_and_read()
         self._state["busy"] = False

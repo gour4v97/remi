@@ -167,6 +167,14 @@ class WarmMicCapture:
             if self._recording:
                 self._buf.extend(indata.tobytes())
 
+    def peek_buffer(self) -> bytes:
+        """Read a snapshot copy of the currently accumulated audio buffer without stopping capture."""
+        with self._lock:
+            raw = bytes(self._buf)
+        if self._native_rate and self._native_rate != 16000:
+            raw = resample_16k(raw, self._native_rate)
+        return raw
+
     def end_and_read(self) -> bytes:
         """Stop accumulating and return captured PCM bytes (PTT released)."""
         with self._lock:
