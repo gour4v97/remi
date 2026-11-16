@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [windows-latest, ubuntu-latest]
         python-version: ["3.11", "3.12"]
 
     steps:
@@ -22,12 +22,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Run unit tests
+      - name: Run unit test suite
         run: |
-          pytest
+          pytest -v
+
+      - name: Run intent router evaluation
+        run: |
+          python tests/eval_router.py

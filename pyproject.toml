@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "remi-suite"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local-first, offline voice assistant and dictation suite for Windows (powered by whisper.cpp and CDP)"
 readme = "README.md"
 authors = [
@@ -53,6 +53,14 @@ dev = [
     "pytest-cov>=4.1.0",
     "ruff>=0.1.0",
     "mypy>=1.6.0"
+]
+neural = [
+    "onnxruntime>=1.16.0",
+    "openwakeword>=0.5.0",
+    "kokoro-onnx>=0.3.0"
+]
+packaging = [
+    "pyinstaller>=6.0.0"
 ]
 docs = [
     "mkdocs>=1.5.0",
