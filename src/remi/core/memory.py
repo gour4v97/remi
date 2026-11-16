@@ -50,6 +50,15 @@ class MemoryStore:
             self._local_conn.conn.row_factory = sqlite3.Row
         return self._local_conn.conn
 
+    def close(self) -> None:
+        """Close current thread's connection to release file lock on Windows."""
+        if hasattr(self._local_conn, "conn") and self._local_conn.conn is not None:
+            try:
+                self._local_conn.conn.close()
+            except Exception:
+                pass
+            self._local_conn.conn = None
+
     def _init_db(self) -> None:
         conn = self._get_conn()
         with conn:

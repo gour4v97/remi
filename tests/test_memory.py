@@ -13,7 +13,10 @@ def temp_memory():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "test_memory.db"
         mem = MemoryStore(db_path=db_path)
-        yield mem
+        try:
+            yield mem
+        finally:
+            mem.close()
 
 
 def test_memory_add_and_get_history(temp_memory):
