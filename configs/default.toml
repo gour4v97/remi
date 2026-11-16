@@ -39,6 +39,8 @@ max_recording_seconds = 120
 vad_enabled = false                # Enable hands-free voice activity detection (auto-stop without PTT)
 vad_silence_seconds = 0.75         # Silence duration to trigger auto-finish (seconds)
 vad_min_speech_seconds = 0.25      # Minimum detected speech required to activate auto-stop
+wakeword_enabled = false           # Enable continuous hotword listening ("Hey Remi", "Remi")
+wakeword_engine = "openwakeword"   # "openwakeword" with fallback to acoustic energy
 
 [memory]
 enabled = true                     # SQLite local conversation history and entity recall store
