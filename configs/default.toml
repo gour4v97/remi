@@ -51,3 +51,7 @@ max_history_turns = 10
 enabled = false                    # Enable local OpenJarvis multi-agent connector bridge
 endpoint = "http://127.0.0.1:8000" # Local OpenJarvis agent server endpoint
 default_agent = "orchestrator"     # Default agent: "orchestrator" or "react"
+
+[schedule]
+morning_digest_enabled = true      # Automatically run morning digest at scheduled time
+morning_digest_time = "08:00"      # Time to trigger daily briefing (24hr format HH:MM)

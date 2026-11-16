@@ -344,6 +344,18 @@ def cmd_eval():
     run_eval()
 
 
+@cmd_skill.command(name="import-agentskills")
+@click.argument("manifest_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+def cmd_skill_import(manifest_path: Path):
+    """Import an agentskills.io or Hermes YAML manifest into Remi skills."""
+    from remi.skills.agentskills_importer import import_agentskills_file
+    res = import_agentskills_file(manifest_path)
+    if res:
+        click.echo(f"Successfully converted and imported skill: {res}")
+    else:
+        click.echo(f"Failed to import {manifest_path}")
+
+
 def voice_trans():
     """Standalone entry point for voice-trans console script."""
     cmd_dictation()
