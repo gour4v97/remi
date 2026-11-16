@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" width="100%" height="240">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#11111B" />
+      <stop offset="100%" stop-color="#181825" />
+    </linearGradient>
+    <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#89B4FA" />
+      <stop offset="100%" stop-color="#CBA6F7" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="100%" height="100%" rx="16" fill="url(#bg)" stroke="#313244" stroke-width="2"/>
+
+  <!-- Left: HUD Pill Graphic -->
+  <g transform="translate(40, 50)">
+    <rect width="320" height="74" rx="37" fill="#1E1E2E" stroke="#45475A" stroke-width="2"/>
+    <circle cx="42" cy="37" r="22" fill="#F38BA8" filter="url(#glow)" opacity="0.8"/>
+    <circle cx="42" cy="37" r="16" fill="#F38BA8"/>
+    <!-- Mic icon -->
+    <path d="M42 27 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -8 0 v-6 a4 4 0 0 1 4 -4 z M36 36 a6 6 0 0 0 12 0 M42 42 v4 M39 46 h6" fill="none" stroke="#11111B" stroke-width="2.5" stroke-linecap="round"/>
+
+    <text x="76" y="32" font-family="Segoe UI, -apple-system, sans-serif" font-weight="bold" font-size="16" fill="#F8F8F2">🎙️ Listening...</text>
+    <text x="76" y="52" font-family="Segoe UI, -apple-system, sans-serif" font-size="13" fill="#A6ADC8">"YouTube pe gaana chalao"</text>
+  </g>
+
+  <!-- Middle Arrow -->
+  <g transform="translate(390, 80)">
+    <path d="M 0 0 L 24 0 M 16 -7 L 24 0 L 16 7" fill="none" stroke="#CBA6F7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="-12" y="25" font-family="Segoe UI, sans-serif" font-size="11" fill="#89B4FA" font-weight="600">&lt; 315 ms</text>
+  </g>
+
+  <!-- Right: Result Badge Graphic -->
+  <g transform="translate(440, 50)">
+    <rect width="320" height="74" rx="37" fill="#1E1E2E" stroke="#313244" stroke-width="2"/>
+    <circle cx="42" cy="37" r="20" fill="#A6E3A1"/>
+    <!-- Checkmark icon -->
+    <path d="M34 37 L40 43 L50 31" fill="none" stroke="#11111B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <text x="76" y="32" font-family="Segoe UI, -apple-system, sans-serif" font-weight="bold" font-size="16" fill="#A6E3A1">✅ Action Executed</text>
+    <text x="76" y="52" font-family="Segoe UI, -apple-system, sans-serif" font-size="13" fill="#BAC2DE">Playing music via CDP (~18ms)</text>
+  </g>
+
+  <!-- Footer Specs -->
+  <g transform="translate(50, 190)">
+    <text x="0" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">⚡ 100% LOCAL</text>
+    <text x="140" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">🎤 WARM MIC (<2ms)</text>
+    <text x="320" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">🧠 TWO-TIER BRAIN</text>
+    <text x="500" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">⌨️ FAST PASTE (Ctrl+V)</text>
+  </g>
+</svg>

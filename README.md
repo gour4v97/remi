@@ -17,6 +17,10 @@
 
 [Getting Started](docs/getting-started.md) • [Architecture](docs/architecture.md) • [Voice Commands](docs/commands.md) • [Changelog](CHANGELOG.md)
 
+<br/>
+
+<img src="assets/hud-demo.svg" alt="Remi HUD and Pipeline Flow" width="85%" />
+
 </div>
 
 ---
