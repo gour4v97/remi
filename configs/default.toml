@@ -46,3 +46,8 @@ wakeword_engine = "openwakeword"   # "openwakeword" with fallback to acoustic en
 [memory]
 enabled = true                     # SQLite local conversation history and entity recall store
 max_history_turns = 10
+
+[openjarvis]
+enabled = false                    # Enable local OpenJarvis multi-agent connector bridge
+endpoint = "http://127.0.0.1:8000" # Local OpenJarvis agent server endpoint
+default_agent = "orchestrator"     # Default agent: "orchestrator" or "react"
