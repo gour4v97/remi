@@ -321,6 +321,29 @@ def cmd_autostart(action: str, app: str):
     sys.exit(handle_cli(app, sys.argv[0], action))
 
 
+@main.command(name="bench")
+@click.option("--wav", help="Specific WAV file to test (default: all files in testdata/)")
+@click.option("--runs", default=3, help="Number of test repetitions (default: 3)")
+def cmd_bench(wav: str | None, runs: int):
+    """Run per-stage latency benchmarking across audio files."""
+    import subprocess
+    bench_script = Path(__file__).resolve().parent.parent.parent.parent / "testdata" / "bench_runner.py"
+    if not bench_script.exists():
+        click.echo(f"Error: bench_runner script not found at {bench_script}")
+        return
+    args = [sys.executable, str(bench_script), "--runs", str(runs)]
+    if wav:
+        args += ["--wav", wav]
+    subprocess.run(args)
+
+
+@main.command(name="eval")
+def cmd_eval():
+    """Run the 36-query accuracy and routing evaluation suite."""
+    from tests.eval_router import run_eval
+    run_eval()
+
+
 def voice_trans():
     """Standalone entry point for voice-trans console script."""
     cmd_dictation()
