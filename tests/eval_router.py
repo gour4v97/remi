@@ -13,6 +13,18 @@ import sys
 import time
 from pathlib import Path
 
+# Ensure UTF-8 output encoding on Windows consoles
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Ensure src/ is on search path
 _SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC) not in sys.path:
@@ -71,7 +83,7 @@ EVAL_DATASET = [
 
 def run_eval() -> None:
     print(f"\n=======================================================")
-    print(f"🚀 Remi Intent Router Evaluation ({len(EVAL_DATASET)} queries)")
+    print(f"[*] Remi Intent Router Evaluation ({len(EVAL_DATASET)} queries)")
     print(f"=======================================================\n")
 
     cfg = {"cdp_port": 9222, "llm_enabled": False, "auto_launch_browser": False}
@@ -93,9 +105,9 @@ def run_eval() -> None:
 
         if is_correct:
             passed += 1
-            status = "✅ PASS"
+            status = "[PASS]"
         else:
-            status = "❌ FAIL"
+            status = "[FAIL]"
 
         print(f"{query:<30} {str(expected_ok):<10} {status:<10} {elapsed_ms:>8.2f}ms")
 
@@ -105,7 +117,7 @@ def run_eval() -> None:
     print(f"{'-'*64}")
     print(f"Total Passed : {passed}/{len(EVAL_DATASET)} ({accuracy:.1f}%)")
     print(f"Avg Latency  : {avg_latency:.2f}ms per query")
-    print(f"Status       : {'🏆 EXCELLENT (<5ms target achieved)' if avg_latency < 5.0 else '⚠️ Slow'}\n")
+    print(f"Status       : {'[OK] EXCELLENT (<5ms target achieved)' if avg_latency < 5.0 else '[WARN] Slow'}\n")
 
 
 if __name__ == "__main__":
