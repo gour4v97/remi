@@ -30,7 +30,7 @@ class OpenJarvisBridge:
         """Probe if local OpenJarvis server is reachable."""
         try:
             req = urllib.request.Request(f"{self.endpoint}/api/health", method="GET")
-            with urllib.request.urlopen(req, timeout=2.0) as resp:
+            with urllib.request.urlopen(req, timeout=0.5) as resp:
                 return resp.status == 200
         except Exception:
             return False

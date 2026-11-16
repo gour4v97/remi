@@ -48,7 +48,15 @@ class RemiRequestHandler(BaseHTTPRequestHandler):
         path = parsed.path
 
         if path == "/health":
-            oj_bridge = get_openjarvis_bridge()
+            cfg = config.load("remi-py")
+            oj_enabled = cfg.get("openjarvis", {}).get("enabled", False)
+            oj_connected = False
+            oj_endpoint = cfg.get("openjarvis", {}).get("endpoint", "http://127.0.0.1:8000")
+
+            if oj_enabled:
+                oj_bridge = get_openjarvis_bridge(oj_endpoint)
+                oj_connected = oj_bridge.is_available()
+
             self._send_json(
                 200,
                 {
@@ -56,8 +64,9 @@ class RemiRequestHandler(BaseHTTPRequestHandler):
                     "app": APP_DISPLAY_NAME,
                     "version": APP_VERSION,
                     "openjarvis_bridge": {
-                        "connected": oj_bridge.is_available(),
-                        "endpoint": oj_bridge.endpoint,
+                        "enabled": oj_enabled,
+                        "connected": oj_connected,
+                        "endpoint": oj_endpoint,
                     },
                 },
             )
