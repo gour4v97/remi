@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Check the OpenJarvis config enabled flag in the `/health` endpoint to prevent timeouts during unit tests.
+- Sanitize Windows console encoding in `eval_router` and set `PYTHONIOENCODING` in CI.
+- Auto-detect the local virtualenv Python in batch launchers.
+- Close the SQLite connection in the `temp_memory` test fixture to release the Windows file lock.
+
+---
+
+## [0.3.0] - 2026-11-16
+
+### Added
+- **Latency pass**: Per-stage `PipelineTimer` latency instrumentation; `WarmMicCapture` to eliminate per-command mic cold-start latency; non-blocking TTS with instant speech interruption; instant `Ctrl+V` paste-text delivery mode; `PersistentCDPSession` reusing one WebSocket across commands. Total turnaround fell from ~1,645 ms to ~315 ms on the RTX 4050 laptop (the README's own benchmark figures).
+- **LLM intent resolver improvements**: Hinglish support, instance caching, and model prioritization.
+- **Voice-activity detection**: Silero/Energy VAD (off by default).
+- **SQLite memory store**: Remembers the last ten turns, so follow-ups like "open that again" resolve.
+- **New skills**: `morning_digest` (Hinglish morning digest) and `system_controls` (voice control for Calculator, Notepad, and more, with a native Windows app launcher).
+- **Desktop HUD overlay**: Floating status pill (Listening / Thinking / Done / Error) in the browser agent, with real-time streaming partial transcription.
+- **Wake word detection**: Wake word engine with a comprehensive eval test harness.
+- **Kokoro local TTS**: Hindi/Hinglish neural text-to-speech, fully on-device.
+- **One-click install**: `install.ps1` bootstrapper, plus `remi bench` and `remi eval` CLI commands.
+- **OpenJarvis local brain connector**: Local brain integration with REST memory endpoints.
+- **BackgroundScheduler daemon**: Scheduled background tasks, plus an agentskills.io manifest importer.
+- **Unit test suites**: Comprehensive tests for `MemoryStore`, VAD, and `PipelineTimer`.
+
+### Changed
+- Version bumped to v0.3.0; optional dependencies updated and `eval_router` wired into CI.
+- Added a PyInstaller packaging spec.
+- Polished the README showcase and added a graphical HUD banner visual asset.
+
+---
+
 ## [0.2.0] - 2026-11-09
 
 ### Added
