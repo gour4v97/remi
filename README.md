@@ -4,16 +4,15 @@
 
 # 🎙️ Remi Suite
 
-### *Local-First, Offline Voice Assistant & Dictation Suite for Windows*
+### *Local-first voice assistant & dictation for Windows*
 
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6.svg)](https://microsoft.com/windows)
 [![Engine](https://img.shields.io/badge/Engine-whisper.cpp%20CUDA-green.svg)](https://github.com/ggerganov/whisper.cpp)
-[![Architecture](https://img.shields.io/badge/Architecture-OpenJarvis%20Pillars-purple.svg)](docs/architecture.md)
 
-**Control your browser and dictate into any application using your voice in English, Hindi, and Hinglish.**  
-*Everything runs 100% locally on your machine — your voice data never leaves your device.*
+**Control your browser and dictate into any app with your voice, in English, Hindi, and Hinglish.**
+*Everything runs locally — your voice never leaves your machine.*
 
 [Getting Started](docs/getting-started.md) • [Architecture](docs/architecture.md) • [Voice Commands](docs/commands.md) • [Changelog](CHANGELOG.md)
 
@@ -25,212 +24,71 @@
 
 ---
 
-## ⚡ Overview
+## What it does
 
-**Remi Suite** provides two zero-cloud voice applications powered by a shared, persistent local inference engine:
+Two voice apps, one shared local engine:
 
-| Application | Trigger | Description | Output |
-|---|---|---|---|
-| **Remi Browser** 🌐 | `Ctrl+Alt+B` | Voice-controlled web browser via Chrome DevTools Protocol (CDP) | Navigation, tabs, scrolling, clicks, media + spoken confirmation |
-| **Voice Trans** 🎙️ | `Ctrl+Alt+Space` | Push-to-talk universal dictation into any focused window | Types text via Win32 Unicode `SendInput` or copies to clipboard |
+| App | Hotkey | What it does |
+|---|---|---|
+| **Remi Browser** 🌐 | `Ctrl+Alt+B` | Voice-controlled browser — 40+ commands for navigation, tabs, scrolling, clicks, and media, with spoken confirmations |
+| **Voice Trans** 🎙️ | `Ctrl+Alt+Space` | Push-to-talk dictation into whatever app has focus |
 
-```
-[HotKey] ──> 🎤 16kHz Mic ──> 🧠 Persistent whisper.cpp (CUDA: ~0.3s) ──> 🔤 Hinglish Normalizer ──> 🖥️ Action / Typing ──> 🔊 Spoken Confirmation
-```
+## Highlights
 
----
+- **Fast**: ~315 ms total turnaround, down from ~1,645 ms (benchmarked on an RTX 4050 laptop). A persistent whisper.cpp server keeps the model warm — ~0.3 s on CUDA, CPU fallback included.
+- **Private by design**: local transcription, local LLM (Ollama / LM Studio / llama.cpp), no cloud, no account.
+- **Remembers context**: SQLite memory across the last 10 turns, so "open that again" just works.
+- **Modern extras**: desktop HUD pill, wake word detection, voice-activity detection, Kokoro Hindi/Hinglish neural TTS, a local REST API (`remi serve`), and modular skills — including a Hinglish morning digest and voice control for Calculator and Notepad.
 
-## ⚡ Performance Benchmark & Latency Targets
+## Quick start
 
-Remi includes built-in per-stage pipeline instrumentation (`remi.core.perf.PipelineTimer`) measuring the end-to-end user experience on consumer Windows hardware (tested on Laptop RTX 4050, 6GB VRAM):
-
-| Pipeline Stage | Legacy Baseline | Remi v1.1 Optimized | Technique / Solution |
-| :--- | :---: | :---: | :--- |
-| **Microphone Init** | ~180 ms | **< 2 ms** | `WarmMicCapture` keeps PortAudio stream alive between commands |
-| **ASR Inference** | ~320 ms | **~280 ms** | Persistent `whisper.cpp` server (CUDA `large-v3-turbo-q5_0`) |
-| **Command Routing** | ~5 ms | **< 3 ms** | Fast regex & fuzzy matcher + process-wide cached SLM resolver |
-| **Text Delivery (Dictation)** | ~450 ms | **~12 ms** | Instant Win32 SendInput `Ctrl+V` paste instead of character loops |
-| **Browser Action (CDP)** | ~140 ms | **~18 ms** | `PersistentCDPSession` keeps WebSocket connection open |
-| **Audio Feedback (TTS)** | ~550 ms (blocking) | **0 ms (async)** | Non-blocking SAPI speech dispatched to daemon thread |
-| **Total Turnaround** | **~1,645 ms** | **~315 ms** | **> 5x End-to-End Latency Reduction** |
-
-To run benchmarks on your own audio clips:
-```bash
-python testdata/bench_runner.py --runs 5
-```
-
----
-
-## 🏛️ Architecture: 5 Composable Pillars
-
-Modeled after the composable architecture of Stanford's **OpenJarvis**, Remi is decoupled into 5 distinct pillars:
-
-```mermaid
-flowchart LR
-    A["1. Speech<br/>(Mic & Translit)"] --> B["2. Engine<br/>(whisper.cpp)"]
-    B --> C["3. Tools<br/>(CDP & Delivery)"]
-    C --> D["4. Agents<br/>(Browser & Dictation)"]
-    E["5. Core<br/>(Registries & EventBus)"] -.-> A & B & C & D
-```
-
-1. **`speech`** (`src/remi/speech/`): 16 kHz audio capture (`MicCapture`), Devanagari-to-Roman transliteration (`to_roman`), and low-latency SAPI TTS synthesis.
-2. **`engine`** (`src/remi/engine/`): Persistent HTTP `whisper.cpp` server with automatic NVIDIA CUDA acceleration and one-shot CLI fallback.
-3. **`tools`** (`src/remi/tools/`): Chrome DevTools Protocol automation client, 40+ command natural grammar router, Win32 SendInput Unicode keyboard delivery, and JSONL audit logging.
-4. **`agents`** (`src/remi/agents/`): User-facing Windows system tray agents (`BrowserVoiceAgent`, `DictationAgent`).
-5. **`core`** (`src/remi/core/`): Generic decorator-based registry (`RegistryBase`), decoupled pub/sub event bus (`EventBus`), and typed TOML configurations.
-
----
-
-## 🚀 Quick Start & One-Click Setup
-
-### One-Click Installer (Windows)
-
-Simply double-click [`scripts/setup.bat`](scripts/setup.bat) or run in PowerShell:
+**One-click installer** — double-click [`scripts/setup.bat`](scripts/setup.bat), or in PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 ```
 
-This will automatically:
-- Install Python dependencies
-- Run the interactive hardware & model wizard
-- Create double-clickable **Remi Browser** and **Voice Trans** shortcuts on your Desktop!
-
----
-
-### Manual Installation & Setup Wizard
+**Or install manually:**
 
 ```bash
 git clone https://github.com/gour4v97/remi.git
 cd remi
 pip install -e .
 
-# Launch interactive setup wizard (models, CUDA, shortcuts)
-remi setup
+remi setup          # interactive setup wizard (models, CUDA, shortcuts)
+remi model download large-v3-turbo-q5_0   # recommended model (~574 MB)
+
+remi start          # Remi Browser (Ctrl+Alt+B)
+remi dictation      # Voice Trans (Ctrl+Alt+Space)
 ```
 
-### 2. Download Whisper Model
-
-Remi downloads self-contained `whisper.cpp` binaries automatically on first use. Download the recommended model weights:
-
-```bash
-# Download recommended balanced model (~574 MB)
-remi model download large-v3-turbo-q5_0
-
-# (Optional) If you have an NVIDIA GPU, download the CUDA build for ~80x speedup:
-remi model download-cuda
-```
-
-### 3. Run Applications
-
-```bash
-# Launch Remi Browser Voice Controller (Ctrl+Alt+B)
-remi start
-
-# Launch Voice Trans Dictation Tray App (Ctrl+Alt+Space)
-remi dictation
-# or: voice-trans
-```
-
----
-
-## ⌨️ CLI Reference
-
-Remi includes a comprehensive Click-based CLI:
-
-```bash
-remi --help
-
-Commands:
-  setup      Launch interactive hardware & model setup wizard
-  init       Alias for 'remi setup' (OpenJarvis style)
-  start      Start Remi browser voice controller tray app (Ctrl+Alt+B)
-  dictation  Start Voice Trans push-to-talk dictation tray app (Ctrl+Alt+Space)
-  serve      Start Remi local REST API server (port 8765)
-  say        Execute a command directly from text (e.g. remi say "open youtube")
-  say-audio  Execute a command from a WAV file (e.g. remi say-audio test.wav)
-  doctor     Run local system diagnostics (GPU, CUDA, models, browser CDP)
-  llm        Manage local SLM/LLM backends (Ollama, LM Studio): status, ask
-  skill      Manage modular custom skills: list, path
-  model      Manage models: list, download <name>, download-cuda, set <name>
-  history    View recent execution audit history
-  autostart  Manage Windows login startup: remi autostart [on|off|status]
-```
-
-### Diagnostics with `remi doctor`
-
-Verify your local system setup with a single command:
-
-```bash
-remi doctor
-```
+## Try saying
 
 ```text
-=== Remi System Health Check ===
-Python version : 3.12.3
-Config path    : C:\Users\User\AppData\Roaming\remi-suite-py\remi-py.toml
-NVIDIA GPU     : Detected
-CUDA build     : Installed
-whisper-cli    : Installed
-whisper-server : Installed
-Active model   : large-v3-turbo-q5_0 -> FOUND
-Browser exe    : C:\Program Files\Google\Chrome\Application\chrome.exe
-Browser CDP    : ACTIVE on port 9222
-================================
+"open youtube"        -> Opens YouTube
+"niche jao"           -> Scrolls down (Hinglish)
+"tab band karo"       -> Closes the active tab
+"gaana chalao"        -> Plays media on the page
+"what time is it"     -> Spoken offline time answer
 ```
 
----
+Full list: [docs/commands.md](docs/commands.md)
 
-## 🎯 Command Grammar & Hinglish Support
+## How it's built
 
-Remi supports natural phrasing in **English**, **Hindi**, and **Hinglish**:
+Five composable parts — `speech`, `engine`, `tools`, `agents`, `core` — with a registry and event bus holding them together. Details: [docs/architecture.md](docs/architecture.md)
 
-```text
-"open youtube"           -> Opens YouTube
-"youtube lofi beats"     -> Searches YouTube for lo-fi beats
-"scroll down"            -> Scrolls page down 600px
-"niche jao"              -> Scrolls page down (Hinglish)
-"tab band karo"          -> Closes active tab
-"naya tab kholo"         -> Opens new tab
-"gaana chalao"           -> Plays media on current page
-"volume badhao"          -> Increases volume by 10%
-"what time is it"        -> Spoken offline time answer
-"aaj ki tarikh"          -> Spoken offline date answer
-```
+Useful commands: `remi doctor` (system diagnostics), `remi serve` (local REST API), `remi llm` (local model backends), `remi skill` (custom skills), `remi bench` / `remi eval` (benchmarks).
 
-See [docs/commands.md](docs/commands.md) for the complete list of 40+ supported commands.
-
----
-
-## ⚡ Performance: CPU vs NVIDIA GPU
-
-Remi uses a **persistent in-memory whisper.cpp HTTP server** so the model remains warm in RAM/VRAM:
-
-| Mode | Hardware | Transcription Latency |
-|---|---|---|
-| **NVIDIA CUDA** 🚀 | RTX 3050 / 4050 or higher | **~0.3 seconds** |
-| **CPU Fallback** | Intel / AMD Multi-Core | **~10 - 25 seconds** |
-
----
-
-## 🛠️ Development & Testing
+## Development
 
 ```bash
-# Install with dev dependencies
-make dev-install
-
-# Run test suite
-make test
-
-# Format code
-make format
-
-# Lint code
-make lint
+make dev-install   # install with dev dependencies
+make test          # run the test suite
+make format        # format code
+make lint          # lint code
 ```
 
----
-
-## 📄 License
+## License
 
 Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.
