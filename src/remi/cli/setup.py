@@ -150,11 +150,19 @@ def create_launcher_scripts() -> list[str]:
 title Remi Voice Assistant - Publisher: GAURAV
 cd /d "%~dp0\\.."
 echo Starting Remi Browser Voice Controller (Ctrl+Alt+B)...
-python -m remi start
+if exist "venv\\Scripts\\python.exe" (
+    venv\\Scripts\\python.exe -m remi start
+) else (
+    python -m remi start
+)
 if %errorlevel% neq 0 (
     echo.
     echo Remi encountered an error. Running diagnostics...
-    python -m remi doctor
+    if exist "venv\\Scripts\\python.exe" (
+        venv\\Scripts\\python.exe -m remi doctor
+    ) else (
+        python -m remi doctor
+    )
     pause
 )
 """
@@ -172,11 +180,19 @@ if %errorlevel% neq 0 (
 title Voice Trans Dictation - Publisher: GAURAV
 cd /d "%~dp0\\.."
 echo Starting Voice Trans Push-to-Talk Dictation (Ctrl+Alt+Space)...
-python -m remi dictation
+if exist "venv\\Scripts\\python.exe" (
+    venv\\Scripts\\python.exe -m remi dictation
+) else (
+    python -m remi dictation
+)
 if %errorlevel% neq 0 (
     echo.
     echo Voice Trans encountered an error. Running diagnostics...
-    python -m remi doctor
+    if exist "venv\\Scripts\\python.exe" (
+        venv\\Scripts\\python.exe -m remi doctor
+    ) else (
+        python -m remi doctor
+    )
     pause
 )
 """

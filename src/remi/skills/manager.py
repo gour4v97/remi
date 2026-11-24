@@ -118,13 +118,14 @@ class SkillManager:
 
         # Action: system_app
         if act.action_type == "system_app":
+            import os
             import subprocess
             app_map = {
                 "calculator": "calc.exe",
                 "calc": "calc.exe",
                 "notepad": "notepad.exe",
                 "task manager": "taskmgr.exe",
-                "settings": "start ms-settings:",
+                "settings": "ms-settings:",
             }
             exe = "calc.exe"
             t_lower = payload.lower() if payload else skill.name.lower()
@@ -133,8 +134,12 @@ class SkillManager:
                     exe = v
                     break
             try:
-                if exe.startswith("start "):
-                    subprocess.Popen(exe, shell=True)
+                if exe.startswith("ms-settings:") or exe.startswith("start "):
+                    target = exe[6:] if exe.startswith("start ") else exe
+                    if hasattr(os, "startfile"):
+                        os.startfile(target)
+                    else:
+                        subprocess.Popen(["xdg-open", target])
                 else:
                     subprocess.Popen([exe])
                 return True, act.spoken, f"system_app:{exe}"

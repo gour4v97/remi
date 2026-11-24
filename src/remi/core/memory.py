@@ -42,12 +42,18 @@ class MemoryStore:
 
     def _get_conn(self) -> sqlite3.Connection:
         if not hasattr(self._local_conn, "conn") or self._local_conn.conn is None:
-            self._local_conn.conn = sqlite3.connect(
+            conn = sqlite3.connect(
                 str(self.db_path),
                 timeout=10.0,
                 check_same_thread=False,
             )
-            self._local_conn.conn.row_factory = sqlite3.Row
+            conn.row_factory = sqlite3.Row
+            try:
+                conn.execute("PRAGMA journal_mode=WAL;")
+                conn.execute("PRAGMA synchronous=NORMAL;")
+            except Exception:
+                pass
+            self._local_conn.conn = conn
         return self._local_conn.conn
 
     def close(self) -> None:

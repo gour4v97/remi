@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import ssl
 import threading
 import urllib.error
 import urllib.parse
@@ -18,6 +19,13 @@ from typing import Any
 from remi.core.registry import EngineRegistry
 
 logger = logging.getLogger(__name__)
+
+_SSL_CTX = ssl.create_default_context()
+
+
+def _urlopen(req: urllib.request.Request, timeout: int = 15):
+    ctx = _SSL_CTX if req.full_url.startswith("https://") else None
+    return urllib.request.urlopen(req, timeout=timeout, context=ctx)
 
 SYSTEM_INTENT_PROMPT = """You are Remi, a fast, concise personal voice assistant for Windows.
 You understand English AND Hinglish (Hindi-English mix).
@@ -108,7 +116,7 @@ class OllamaEngine(BaseLLMEngine):
     def is_available(self) -> bool:
         try:
             req = urllib.request.Request(f"{self.endpoint}/api/version", method="GET")
-            with urllib.request.urlopen(req, timeout=2) as r:
+            with _urlopen(req, timeout=2) as r:
                 return r.status == 200
         except Exception:
             return False
@@ -116,7 +124,7 @@ class OllamaEngine(BaseLLMEngine):
     def list_models(self) -> list[str]:
         try:
             req = urllib.request.Request(f"{self.endpoint}/api/tags", method="GET")
-            with urllib.request.urlopen(req, timeout=3) as r:
+            with _urlopen(req, timeout=3) as r:
                 data = json.loads(r.read().decode("utf-8"))
                 return [m.get("name", "") for m in data.get("models", [])]
         except Exception:
@@ -136,7 +144,7 @@ class OllamaEngine(BaseLLMEngine):
         data_bytes = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(url, data=data_bytes, headers={"Content-Type": "application/json"}, method="POST")
 
-        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+        with _urlopen(req, timeout=self.timeout) as r:
             res = json.loads(r.read().decode("utf-8"))
             return LLMResponse(
                 content=res.get("response", "").strip(),
@@ -158,7 +166,7 @@ class OpenAICompatEngine(BaseLLMEngine):
     def is_available(self) -> bool:
         try:
             req = urllib.request.Request(f"{self.endpoint}/models", method="GET")
-            with urllib.request.urlopen(req, timeout=2) as r:
+            with _urlopen(req, timeout=2) as r:
                 return r.status == 200
         except Exception:
             return False
@@ -166,7 +174,7 @@ class OpenAICompatEngine(BaseLLMEngine):
     def list_models(self) -> list[str]:
         try:
             req = urllib.request.Request(f"{self.endpoint}/models", method="GET")
-            with urllib.request.urlopen(req, timeout=3) as r:
+            with _urlopen(req, timeout=3) as r:
                 data = json.loads(r.read().decode("utf-8"))
                 return [m.get("id", "") for m in data.get("data", [])]
         except Exception:
@@ -187,7 +195,7 @@ class OpenAICompatEngine(BaseLLMEngine):
         data_bytes = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(url, data=data_bytes, headers={"Content-Type": "application/json"}, method="POST")
 
-        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+        with _urlopen(req, timeout=self.timeout) as r:
             res = json.loads(r.read().decode("utf-8"))
             choice = res.get("choices", [{}])[0]
             content = choice.get("message", {}).get("content", "").strip()

@@ -23,9 +23,27 @@ CLICK_JS = (
 )
 
 TYPE_JS = (
-    "(function(){var ae=document.activeElement;if(!ae||(ae.tagName!=='INPUT'&&"
-    "ae.tagName!=='TEXTAREA'&&!ae.isContentEditable))return 'no input focused';"
-    "document.execCommand('insertText',false,__Q__);return 'typed';})()"
+    "(function(){"
+    "var ae=document.activeElement;"
+    "if(!ae||(ae.tagName!=='INPUT'&&ae.tagName!=='TEXTAREA'&&!ae.isContentEditable))return 'no input focused';"
+    "var val=__Q__;"
+    "if(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'){"
+    "  var s=ae.selectionStart||0,e=ae.selectionEnd||0;"
+    "  if(typeof ae.setRangeText==='function'){ae.setRangeText(val,s,e,'end');}else{ae.value=val;}"
+    "  ae.dispatchEvent(new Event('input',{bubbles:true}));"
+    "  ae.dispatchEvent(new Event('change',{bubbles:true}));"
+    "  return 'typed';"
+    "}"
+    "try{"
+    "  var ev=new InputEvent('beforeinput',{bubbles:true,cancelable:true,inputType:'insertText',data:val});"
+    "  ae.dispatchEvent(ev);"
+    "}catch(err){}"
+    "if(!document.execCommand('insertText',false,val)){"
+    "  ae.textContent=val;"
+    "  ae.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:val}));"
+    "}"
+    "return 'typed';"
+    "})()"
 )
 
 FIND_JS = (

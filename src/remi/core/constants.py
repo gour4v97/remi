@@ -4,7 +4,7 @@ from typing import Final
 # Application identifiers
 APP_NAME: Final[str] = "remi"
 APP_DISPLAY_NAME: Final[str] = "Remi Voice Assistant"
-APP_VERSION: Final[str] = "0.2.0"
+APP_VERSION: Final[str] = "0.3.0"
 APP_PUBLISHER: Final[str] = "GAURAV"
 APP_AUTHOR: Final[str] = "GAURAV"
 APP_COPYRIGHT: Final[str] = "Copyright (c) 2026 GAURAV. All rights reserved."

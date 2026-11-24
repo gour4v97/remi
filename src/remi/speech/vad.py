@@ -13,6 +13,11 @@ import struct
 from abc import ABC, abstractmethod
 from typing import Any
 
+try:
+    import numpy as np
+except ImportError:
+    np = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,14 +47,18 @@ class EnergyVAD(BaseVAD):
         if not pcm_chunk:
             return 0.0
 
-        n_samples = len(pcm_chunk) // 2
-        if n_samples == 0:
-            return 0.0
-
-        # Unpack signed 16-bit samples
-        samples = struct.unpack(f"<{n_samples}h", pcm_chunk)
-        sum_sq = sum(s * s for s in samples)
-        rms = math.sqrt(sum_sq / n_samples)
+        if np is not None:
+            arr = np.frombuffer(pcm_chunk, dtype=np.int16).astype(np.float32)
+            if len(arr) == 0:
+                return 0.0
+            rms = float(np.sqrt(np.mean(arr ** 2)))
+        else:
+            n_samples = len(pcm_chunk) // 2
+            if n_samples == 0:
+                return 0.0
+            samples = struct.unpack(f"<{n_samples}h", pcm_chunk)
+            sum_sq = sum(s * s for s in samples)
+            rms = math.sqrt(sum_sq / n_samples)
 
         # Sigmoid-like smooth scoring based on threshold
         if rms < self.energy_threshold * 0.5:

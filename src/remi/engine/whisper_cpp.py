@@ -8,6 +8,7 @@ import json
 import logging
 import re
 import shutil
+import ssl
 import subprocess
 import threading
 import time
@@ -24,6 +25,15 @@ from remi.core.registry import EngineRegistry
 from remi.engine._base import BaseASREngine
 
 logger = logging.getLogger(__name__)
+
+_SSL_CTX = ssl.create_default_context()
+
+
+def _download_file(url: str, dest_path: Path, timeout: int = 120) -> None:
+    req = urllib.request.Request(url, headers={"User-Agent": f"Remi-ASR/{config.APP_VERSION}"})
+    ctx = _SSL_CTX if url.startswith("https://") else None
+    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as response, open(dest_path, "wb") as out:
+        shutil.copyfileobj(response, out)
 
 WHISPER_ZIP_URL = "https://github.com/ggerganov/whisper.cpp/releases/download/b5454/whisper-bin-x64.zip"
 CUDA_ZIP_URL = "https://github.com/ggerganov/whisper.cpp/releases/download/b5454/whisper-bin-win-cuda-12.4.0-x64.zip"
@@ -52,7 +62,7 @@ def ensure_binaries() -> None:
             return
         logger.info(f"Downloading whisper.cpp binaries (~2 MB) from {WHISPER_ZIP_URL} ...")
         zip_path = config.BIN_DIR / "whisper-bin.zip"
-        urllib.request.urlretrieve(WHISPER_ZIP_URL, zip_path)
+        _download_file(WHISPER_ZIP_URL, zip_path)
         with zipfile.ZipFile(zip_path) as z:
             for info in z.infolist():
                 if info.is_dir():
@@ -86,7 +96,7 @@ def ensure_cuda() -> bool:
     logger.info("Downloading whisper.cpp CUDA build (~250 MB) for GPU transcription ...")
     zip_path = CUDA_DIR / "cuda.zip"
     try:
-        urllib.request.urlretrieve(CUDA_ZIP_URL, zip_path)
+        _download_file(CUDA_ZIP_URL, zip_path, timeout=300)
         with zipfile.ZipFile(zip_path) as z:
             for info in z.infolist():
                 if info.is_dir():

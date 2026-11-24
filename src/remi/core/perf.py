@@ -15,7 +15,6 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +88,7 @@ class PipelineTimer:
             return 0.0
         return (max(self._marks.values()) - self._t0) * 1000
 
-    def log_to_file(self, path: Optional[Path] = None) -> None:
+    def log_to_file(self, path: Path | None = None) -> None:
         """Append a JSON summary line to bench.jsonl (default: ~/remi-bench.jsonl)."""
         p = path or Path.home() / "remi-bench.jsonl"
         entry = {

@@ -21,7 +21,6 @@ from remi.core.constants import (
     APP_BROWSER_ID,
     COLORS,
     DEFAULT_HOTKEY_BROWSER,
-    MODEL_CATALOG,
 )
 from remi.core.events import EventBus
 from remi.core.registry import AgentRegistry
