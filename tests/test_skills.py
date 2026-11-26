@@ -43,6 +43,16 @@ class TestSkills(unittest.TestCase):
         self.assertTrue(SkillRegistry.contains("developer_tools"))
         self.assertTrue(SkillRegistry.contains("hacker_news"))
 
+    def test_agentskills_importer_escapes_toml_strings(self):
+        import tomllib
+        from remi.skills.agentskills_importer import convert_agentskills_to_remi
+
+        manifest = 'name: my_skill\ndescription: Quote "test" \\ path\nurl: https://example.com\n'
+        toml_text = convert_agentskills_to_remi(manifest)
+        parsed = tomllib.loads(toml_text)
+        self.assertEqual(parsed["name"], "my_skill")
+        self.assertIn('"test"', parsed["description"])
+
 
 if __name__ == "__main__":
     unittest.main()

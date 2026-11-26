@@ -82,9 +82,13 @@ EVAL_DATASET = [
 
 
 def run_eval() -> None:
-    print(f"\n=======================================================")
+    import subprocess
+    from unittest.mock import patch
+    from remi.tools import browser
+
+    print("\n=======================================================")
     print(f"[*] Remi Intent Router Evaluation ({len(EVAL_DATASET)} queries)")
-    print(f"=======================================================\n")
+    print("=======================================================\n")
 
     cfg = {"cdp_port": 9222, "llm_enabled": False, "auto_launch_browser": False}
     passed = 0
@@ -93,23 +97,32 @@ def run_eval() -> None:
     print(f"{'Utterance':<30} {'Expected':<10} {'Result':<10} {'Latency':>10}")
     print(f"{'-'*64}")
 
-    for query, expected_ok, expected_snippet in EVAL_DATASET:
-        t0 = time.perf_counter()
-        outcome = router.run(query, cfg)
-        elapsed_ms = (time.perf_counter() - t0) * 1000
-        total_time_ms += elapsed_ms
+    with (
+        patch.object(browser, "is_cdp_up", return_value=False),
+        patch.object(subprocess, "Popen", return_value=None),
+    ):
+        for query, expected_ok, expected_snippet in EVAL_DATASET:
+            t0 = time.perf_counter()
+            outcome = router.run(query, cfg)
+            elapsed_ms = (time.perf_counter() - t0) * 1000
+            total_time_ms += elapsed_ms
 
-        # Note: If CDP is down, browser actions return ok=False with "browser not reachable".
-        # In mock/offline evaluation mode, check if the router attempted the correct branch.
-        is_correct = outcome.ok == expected_ok or "browser not reachable" in outcome.spoken or (expected_snippet and expected_snippet in (outcome.spoken + outcome.detail))
+            combined = f"{outcome.spoken} {outcome.detail}"
+            if expected_snippet.startswith("system_app:"):
+                is_correct = outcome.ok == expected_ok and expected_snippet in combined
+            else:
+                is_correct = (
+                    (outcome.ok == expected_ok and (not expected_snippet or expected_snippet in combined))
+                    or "browser not reachable" in outcome.spoken
+                )
 
-        if is_correct:
-            passed += 1
-            status = "[PASS]"
-        else:
-            status = "[FAIL]"
+            if is_correct:
+                passed += 1
+                status = "[PASS]"
+            else:
+                status = "[FAIL]"
 
-        print(f"{query:<30} {str(expected_ok):<10} {status:<10} {elapsed_ms:>8.2f}ms")
+            print(f"{query:<30} {str(expected_ok):<10} {status:<10} {elapsed_ms:>8.2f}ms")
 
     avg_latency = total_time_ms / len(EVAL_DATASET)
     accuracy = (passed / len(EVAL_DATASET)) * 100
@@ -118,6 +131,8 @@ def run_eval() -> None:
     print(f"Total Passed : {passed}/{len(EVAL_DATASET)} ({accuracy:.1f}%)")
     print(f"Avg Latency  : {avg_latency:.2f}ms per query")
     print(f"Status       : {'[OK] EXCELLENT (<5ms target achieved)' if avg_latency < 5.0 else '[WARN] Slow'}\n")
+    if passed != len(EVAL_DATASET):
+        sys.exit(1)
 
 
 if __name__ == "__main__":

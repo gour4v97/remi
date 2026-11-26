@@ -51,6 +51,14 @@ class TestServer(unittest.TestCase):
             self.assertTrue(data["ok"])
             self.assertIn("it's", data["spoken"])
 
+    def test_invalid_history_limit_returns_400(self):
+        import urllib.error
+
+        url = f"http://127.0.0.1:{self.port}/v1/history?limit=abc"
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(url, timeout=2)
+        self.assertEqual(ctx.exception.code, 400)
+
 
 if __name__ == "__main__":
     unittest.main()
