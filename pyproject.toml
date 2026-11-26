@@ -8,7 +8,7 @@ version = "0.3.0"
 description = "Local-first, offline voice assistant and dictation suite for Windows (powered by whisper.cpp and CDP)"
 readme = "README.md"
 authors = [
-    { name = "GAURAV" }
+    { name = "Gaurav Manjhi" }
 ]
 license = { text = "MIT" }
 requires-python = ">=3.11"
@@ -81,6 +81,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "remi.skills.builtin" = ["*.toml"]
+"remi.assets" = ["*.ico", "*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

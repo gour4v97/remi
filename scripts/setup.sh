@@ -7,7 +7,7 @@ set -e
 
 echo "=========================================================="
 echo "          Remi Voice AI Suite - Unix Setup                "
-echo "          Publisher: GAURAV                               "
+echo "          Publisher: Gaurav Manjhi                        "
 echo "=========================================================="
 
 # 1. Detect Python

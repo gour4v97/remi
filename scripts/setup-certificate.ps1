@@ -1,10 +1,10 @@
-# =====================================================================
+﻿# =====================================================================
 #  Remi Suite - Publisher Certificate Generator & Code Signing Tool
-#  Configures Windows Authenticode Publisher: GAURAV
+#  Configures Windows Authenticode Publisher: Gaurav Manjhi
 # =====================================================================
 
 param (
-    [string]$PublisherName = "GAURAV"
+    [string]$PublisherName = "Gaurav Manjhi"
 )
 
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -55,10 +55,16 @@ try {
     Write-Host "  ⚠️ Store registration note: $($_.Exception.Message)" -ForegroundColor Gray
 }
 
-# 3. Sign scripts in scripts directory
-Write-Host "[3/3] Digitally signing installer and launcher scripts with '$PublisherName'..." -ForegroundColor Cyan
+# 3. Sign scripts in scripts directory and standalone exe if present
+Write-Host "[3/3] Digitally signing installer, launchers, and binaries with '$PublisherName'..." -ForegroundColor Cyan
 $scriptDir = $PSScriptRoot
-$filesToSign = Get-ChildItem -Path $scriptDir -Filter "*.ps1"
+$repoRoot = Split-Path -Parent $scriptDir
+$filesToSign = @()
+$filesToSign += Get-ChildItem -Path $scriptDir -Filter "*.ps1"
+$distExe = Join-Path $repoRoot "dist\remi\remi.exe"
+if (Test-Path $distExe) {
+    $filesToSign += Get-Item $distExe
+}
 
 foreach ($file in $filesToSign) {
     try {

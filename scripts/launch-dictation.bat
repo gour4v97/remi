@@ -1,24 +1,23 @@
 @echo off
 :: ===================================================================
 :: Voice Trans Push-to-Talk Dictation
-:: Publisher: GAURAV
-:: Copyright (c) 2026 GAURAV. All rights reserved.
+:: Publisher: Gaurav Manjhi
+:: Copyright (c) 2026 Gaurav Manjhi. All rights reserved.
 :: ===================================================================
-title Voice Trans Dictation - Publisher: GAURAV
+title Voice Trans Dictation - Publisher: Gaurav Manjhi
 cd /d "%~dp0\.."
-echo Starting Voice Trans Push-to-Talk Dictation (Ctrl+Alt+Space)...
 if exist "venv\Scripts\python.exe" (
-    venv\Scripts\python.exe -m remi dictation
+    set "PY_EXE=venv\Scripts\python.exe"
+) else if exist ".venv\Scripts\python.exe" (
+    set "PY_EXE=.venv\Scripts\python.exe"
 ) else (
-    python -m remi dictation
+    set "PY_EXE=python"
 )
+echo Starting Voice Trans Push-to-Talk Dictation (Ctrl+Alt+Space)...
+"%PY_EXE%" -m remi dictation
 if %errorlevel% neq 0 (
     echo.
     echo Voice Trans encountered an error. Running diagnostics...
-    if exist "venv\Scripts\python.exe" (
-        venv\Scripts\python.exe -m remi doctor
-    ) else (
-        python -m remi doctor
-    )
+    "%PY_EXE%" -m remi doctor
     pause
 )

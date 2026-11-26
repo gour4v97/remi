@@ -1,10 +1,10 @@
 @echo off
 :: ===================================================================
 :: Remi Suite Setup
-:: Publisher: GAURAV
-:: Copyright (c) 2026 GAURAV. All rights reserved.
+:: Publisher: Gaurav Manjhi
+:: Copyright (c) 2026 Gaurav Manjhi. All rights reserved.
 :: ===================================================================
-title Remi Setup Wizard - Publisher: GAURAV
+title Remi Setup Wizard - Publisher: Gaurav Manjhi
 cd /d "%~dp0\.."
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
 if %errorlevel% neq 0 (

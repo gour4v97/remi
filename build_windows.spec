@@ -15,6 +15,9 @@ src_dir = Path("src").resolve()
 datas = [
     ("configs/default.toml", "configs"),
     ("src/remi/skills/builtin/*.toml", "remi/skills/builtin"),
+    ("src/remi/assets/*", "remi/assets"),
+    ("assets/remi.ico", "assets"),
+    ("assets/logo.png", "assets"),
     ("testdata/open-github.wav", "testdata"),
 ]
 
@@ -84,7 +87,8 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets/logo.svg' if Path('assets/logo.svg').exists() else None,
+    icon='assets/remi.ico' if Path('assets/remi.ico').exists() else None,
+    version='version_info.txt' if Path('version_info.txt').exists() else None,
 )
 
 coll = COLLECT(

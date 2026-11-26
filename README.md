@@ -89,6 +89,7 @@ make format        # format code
 make lint          # lint code
 ```
 
-## License
+## License & Author
 
+Created and maintained by **Gaurav Manjhi** (`gour4v97`).  
 Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.

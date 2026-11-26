@@ -1,19 +1,19 @@
 # =====================================================================
 #  Remi Suite - Automated Windows Setup & Desktop Shortcut Installer
-#  Publisher: GAURAV
+#  Publisher: Gaurav Manjhi
 # =====================================================================
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "         Remi Voice AI Suite - Windows Setup              " -ForegroundColor Cyan
-Write-Host "         Publisher: GAURAV                                " -ForegroundColor Yellow
+Write-Host "         Publisher: Gaurav Manjhi                         " -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 0. Configure Verified Publisher (GAURAV)
+# 0. Configure Verified Publisher (Gaurav Manjhi)
 $certScript = Join-Path $PSScriptRoot "setup-certificate.ps1"
 if (Test-Path $certScript) {
     try {
-        & $certScript -PublisherName "GAURAV"
+        & $certScript -PublisherName "Gaurav Manjhi"
     } catch {
         Write-Host "Publisher certificate setup note: $($_.Exception.Message)" -ForegroundColor Gray
     }
@@ -54,13 +54,15 @@ try {
     $DesktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)
 
     $rootPath = Split-Path -Parent $PSScriptRoot
+    $iconPath = Join-Path $rootPath "assets\remi.ico"
 
     # Shortcut 1: Remi Browser
     $ShortcutRemi = $WshShell.CreateShortcut("$DesktopPath\Remi Browser.lnk")
     $ShortcutRemi.TargetPath = "$pyExe"
     $ShortcutRemi.Arguments = "-m remi start"
     $ShortcutRemi.WorkingDirectory = "$rootPath"
-    $ShortcutRemi.Description = "Remi Voice-Controlled Browser"
+    $ShortcutRemi.Description = "Remi Voice-Controlled Browser by Gaurav Manjhi"
+    if (Test-Path $iconPath) { $ShortcutRemi.IconLocation = "$iconPath,0" }
     $ShortcutRemi.Save()
 
     # Shortcut 2: Voice Trans Dictation
@@ -68,7 +70,8 @@ try {
     $ShortcutDict.TargetPath = "$pyExe"
     $ShortcutDict.Arguments = "-m remi dictation"
     $ShortcutDict.WorkingDirectory = "$rootPath"
-    $ShortcutDict.Description = "Voice Trans Push-to-Talk Dictation"
+    $ShortcutDict.Description = "Voice Trans Push-to-Talk Dictation by Gaurav Manjhi"
+    if (Test-Path $iconPath) { $ShortcutDict.IconLocation = "$iconPath,0" }
     $ShortcutDict.Save()
 
     Write-Host "  Desktop shortcuts created successfully!" -ForegroundColor Green
