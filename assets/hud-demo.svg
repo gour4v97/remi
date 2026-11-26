@@ -48,7 +48,7 @@
   <!-- Footer Specs -->
   <g transform="translate(50, 190)">
     <text x="0" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">⚡ 100% LOCAL</text>
-    <text x="140" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">🎤 WARM MIC (<2ms)</text>
+    <text x="140" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">🎤 WARM MIC (&lt;2ms)</text>
     <text x="320" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">🧠 TWO-TIER BRAIN</text>
     <text x="500" y="0" font-family="Segoe UI, sans-serif" font-size="13" fill="#6C7086" font-weight="600">⌨️ FAST PASTE (Ctrl+V)</text>
   </g>
