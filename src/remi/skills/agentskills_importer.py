@@ -4,6 +4,7 @@ Converts skills following the agentskills.io YAML specification into Remi's nati
 """
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -54,19 +55,19 @@ def convert_agentskills_to_remi(manifest_yaml: str) -> str:
     spoken = spec.get("spoken", f"executing {name}")
 
     toml_lines = [
-        f'name = "{name}"',
-        f'description = "{desc}"',
-        f'triggers = [',
+        f"name = {json.dumps(str(name))}",
+        f"description = {json.dumps(str(desc))}",
+        "triggers = [",
     ]
     for t in triggers:
-        toml_lines.append(f'    "{t}",')
-    toml_lines.append(']')
-    toml_lines.append('')
-    toml_lines.append('[action]')
+        toml_lines.append(f"    {json.dumps(str(t))},")
+    toml_lines.append("]")
+    toml_lines.append("")
+    toml_lines.append("[action]")
     toml_lines.append('type = "open_url"')
-    toml_lines.append(f'url = "{url}"')
-    toml_lines.append(f'spoken = "{spoken}"')
-    toml_lines.append('')
+    toml_lines.append(f"url = {json.dumps(str(url))}")
+    toml_lines.append(f"spoken = {json.dumps(str(spoken))}")
+    toml_lines.append("")
 
     return "\n".join(toml_lines)
 

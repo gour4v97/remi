@@ -74,7 +74,11 @@ class RemiRequestHandler(BaseHTTPRequestHandler):
 
         if path == "/v1/history":
             params = parse_qs(parsed.query)
-            limit = int(params.get("limit", [20])[0])
+            try:
+                limit = max(1, min(500, int(params.get("limit", [20])[0])))
+            except ValueError:
+                self._send_json(400, {"error": "Invalid 'limit' parameter"})
+                return
             entries = history.load("remi-py", limit)
             self._send_json(200, {"entries": entries, "count": len(entries)})
             return
@@ -126,20 +130,36 @@ class RemiRequestHandler(BaseHTTPRequestHandler):
 
         self._send_json(404, {"error": "Not found", "path": path})
 
+    def _read_json_body(self) -> dict[str, Any] | None:
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            self._send_json(400, {"error": "Invalid Content-Length header"})
+            return None
+        if content_length <= 0 or content_length > 1_048_576:
+            self._send_json(413 if content_length > 1_048_576 else 400, {"error": "Invalid payload size"})
+            return None
+        raw_body = self.rfile.read(content_length).decode("utf-8", errors="replace")
+        try:
+            body = json.loads(raw_body)
+        except json.JSONDecodeError:
+            self._send_json(400, {"error": "Invalid JSON payload"})
+            return None
+        if not isinstance(body, dict):
+            self._send_json(400, {"error": "JSON payload must be an object"})
+            return None
+        return body
+
     def do_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path
 
         if path == "/v1/command":
-            content_length = int(self.headers.get("Content-Length", 0))
-            raw_body = self.rfile.read(content_length).decode("utf-8")
-            try:
-                body = json.loads(raw_body)
-            except json.JSONDecodeError:
-                self._send_json(400, {"error": "Invalid JSON payload"})
+            body = self._read_json_body()
+            if body is None:
                 return
 
-            text = body.get("text", "").strip()
+            text = str(body.get("text", "")).strip()
             if not text:
                 self._send_json(400, {"error": "Missing 'text' parameter"})
                 return
@@ -158,17 +178,13 @@ class RemiRequestHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/v1/memory/fact":
-            content_length = int(self.headers.get("Content-Length", 0))
-            raw_body = self.rfile.read(content_length).decode("utf-8")
-            try:
-                body = json.loads(raw_body)
-            except json.JSONDecodeError:
-                self._send_json(400, {"error": "Invalid JSON payload"})
+            body = self._read_json_body()
+            if body is None:
                 return
 
-            key = body.get("key", "").strip()
-            val = body.get("value", "").strip()
-            category = body.get("category", "general")
+            key = str(body.get("key", "")).strip()
+            val = str(body.get("value", "")).strip()
+            category = str(body.get("category", "general"))
             if not key or not val:
                 self._send_json(400, {"error": "Missing 'key' or 'value'"})
                 return

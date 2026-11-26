@@ -136,6 +136,61 @@ def config_path(app: str) -> Path:
     return APPDATA / f"{app}.toml"
 
 
+def _flatten_toml(data: dict[str, Any], cfg: dict[str, Any]) -> None:
+    """Populate flat runtime config keys from either flat or sectioned TOML."""
+    section_map = {
+        "engine": {
+            "local_model": "local_model",
+            "asr_port": "asr_port",
+            "language": "language",
+            "bench_mode": "bench_mode",
+        },
+        "browser": {
+            "hotkey": "hotkey",
+            "cdp_port": "cdp_port",
+            "auto_launch_browser": "auto_launch_browser",
+            "browser_profile": "browser_profile",
+            "voice_feedback": "voice_feedback",
+        },
+        "dictation": {
+            "hotkey": "hotkey",
+            "delivery_mode": "delivery_mode",
+            "writing_mode": "writing_mode",
+            "language": "language",
+            "max_recording_seconds": "max_recording_seconds",
+        },
+        "llm": {
+            "enabled": "llm_enabled",
+            "backend": "llm_backend",
+            "endpoint": "llm_endpoint",
+            "model": "llm_model",
+            "timeout_seconds": "llm_timeout",
+        },
+        "speech": {
+            "streaming_transcription": "streaming_transcription",
+        },
+    }
+    for k, v in data.items():
+        if isinstance(v, dict) and k in section_map:
+            for sub_k, flat_k in section_map[k].items():
+                if sub_k in v:
+                    cfg[flat_k] = v[sub_k]
+            cfg[k] = v
+        else:
+            cfg[k] = v
+
+
+def _toml_scalar(v: Any) -> str | None:
+    if isinstance(v, bool):
+        return str(v).lower()
+    if isinstance(v, (int, float)):
+        return str(v)
+    if isinstance(v, str):
+        escaped = v.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        return f'"{escaped}"'
+    return None
+
+
 def load(app: str = APP_BROWSER_ID) -> dict[str, Any]:
     """Load flat dictionary config matching legacy voicecore.config."""
     ensure_dirs()
@@ -144,8 +199,7 @@ def load(app: str = APP_BROWSER_ID) -> dict[str, Any]:
     if p.exists():
         try:
             data = tomllib.loads(p.read_text(encoding="utf-8"))
-            for k, v in data.items():
-                cfg[k] = v
+            _flatten_toml(data, cfg)
         except Exception:
             pass  # fail safe to defaults
     cfg["app"] = app
@@ -156,15 +210,24 @@ def save(app: str, cfg: dict[str, Any]) -> None:
     """Save dictionary config atomically as TOML."""
     ensure_dirs()
     lines = [f"# remi-suite-py {app} configuration", ""]
+    sections: list[tuple[str, dict[str, Any]]] = []
     for k, v in cfg.items():
-        if k in ("app",):
+        if k == "app":
             continue
-        if isinstance(v, bool):
-            lines.append(f"{k} = {str(v).lower()}")
-        elif isinstance(v, (int, float)):
-            lines.append(f"{k} = {v}")
-        elif isinstance(v, str):
-            lines.append(f'{k} = "{v}"')
+        if isinstance(v, dict):
+            sections.append((k, v))
+            continue
+        val = _toml_scalar(v)
+        if val is not None:
+            lines.append(f"{k} = {val}")
+
+    for sec_name, sec_dict in sections:
+        lines.extend(["", f"[{sec_name}]"])
+        for sub_k, sub_v in sec_dict.items():
+            val = _toml_scalar(sub_v)
+            if val is not None:
+                lines.append(f"{sub_k} = {val}")
+
     tmp = config_path(app).with_suffix(".tmp")
     tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
     os.replace(tmp, config_path(app))
