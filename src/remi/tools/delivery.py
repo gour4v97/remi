@@ -106,8 +106,11 @@ def type_text(text: str) -> None:
                 inputs.append(_key(VK_RETURN, 0, 0))
                 inputs.append(_key(VK_RETURN, 0, KEYEVENTF_KEYUP))
                 continue
-            inputs.append(_key(0, ord(ch), KEYEVENTF_UNICODE))
-            inputs.append(_key(0, ord(ch), KEYEVENTF_UNICODE | KEYEVENTF_KEYUP))
+            utf16 = ch.encode("utf-16-le")
+            for i in range(0, len(utf16), 2):
+                code_unit = int.from_bytes(utf16[i : i + 2], "little")
+                inputs.append(_key(0, code_unit, KEYEVENTF_UNICODE))
+                inputs.append(_key(0, code_unit, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP))
 
         if not inputs:
             return

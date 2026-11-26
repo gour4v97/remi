@@ -4,12 +4,14 @@ Preserves exact whisper-server HTTP protocol and whisper-cli invocations from Re
 """
 from __future__ import annotations
 
+import io
 import json
 import logging
 import re
 import shutil
 import ssl
 import subprocess
+import tempfile
 import threading
 import time
 import urllib.request
@@ -20,7 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from remi.core import config
-from remi.core.constants import DEFAULT_ASR_PORT
+from remi.core.constants import APP_VERSION, DEFAULT_ASR_PORT
 from remi.core.registry import EngineRegistry
 from remi.engine._base import BaseASREngine
 
@@ -30,7 +32,7 @@ _SSL_CTX = ssl.create_default_context()
 
 
 def _download_file(url: str, dest_path: Path, timeout: int = 120) -> None:
-    req = urllib.request.Request(url, headers={"User-Agent": f"Remi-ASR/{config.APP_VERSION}"})
+    req = urllib.request.Request(url, headers={"User-Agent": f"Remi-ASR/{APP_VERSION}"})
     ctx = _SSL_CTX if url.startswith("https://") else None
     with urllib.request.urlopen(req, timeout=timeout, context=ctx) as response, open(dest_path, "wb") as out:
         shutil.copyfileobj(response, out)
@@ -62,15 +64,17 @@ def ensure_binaries() -> None:
             return
         logger.info(f"Downloading whisper.cpp binaries (~2 MB) from {WHISPER_ZIP_URL} ...")
         zip_path = config.BIN_DIR / "whisper-bin.zip"
-        _download_file(WHISPER_ZIP_URL, zip_path)
-        with zipfile.ZipFile(zip_path) as z:
-            for info in z.infolist():
-                if info.is_dir():
-                    continue
-                name = Path(info.filename).name  # flatten
-                if name.lower().endswith((".exe", ".dll")):
-                    (config.BIN_DIR / name).write_bytes(z.read(info))
-        zip_path.unlink(missing_ok=True)
+        try:
+            _download_file(WHISPER_ZIP_URL, zip_path)
+            with zipfile.ZipFile(zip_path) as z:
+                for info in z.infolist():
+                    if info.is_dir():
+                        continue
+                    name = Path(info.filename).name  # flatten
+                    if name.lower().endswith((".exe", ".dll")):
+                        (config.BIN_DIR / name).write_bytes(z.read(info))
+        finally:
+            zip_path.unlink(missing_ok=True)
         if not WHISPER_CLI.exists():
             raise RuntimeError("whisper-cli.exe not found in the downloaded archive")
 
@@ -104,10 +108,11 @@ def ensure_cuda() -> bool:
                 name = Path(info.filename).name
                 if name.lower().endswith((".exe", ".dll")):
                     (CUDA_DIR / name).write_bytes(z.read(info))
-        zip_path.unlink(missing_ok=True)
     except Exception as ex:
         logger.warning(f"CUDA download failed ({ex}) - staying on CPU")
         return False
+    finally:
+        zip_path.unlink(missing_ok=True)
     return WHISPER_SERVER_CUDA.exists()
 
 
@@ -218,29 +223,41 @@ class WhisperCppEngine(BaseASREngine):
         cfg: dict | None = None,
     ) -> str:
         cfg = cfg or self.cfg or {"asr_port": DEFAULT_ASR_PORT, "local_model": model, "language": language}
-        wav_path = config.LOCALAPPDATA / "utterance.wav"
-        wav_path.parent.mkdir(parents=True, exist_ok=True)
-        with wave.open(str(wav_path), "wb") as w:
+        wav_buf = io.BytesIO()
+        with wave.open(wav_buf, "wb") as w:
             w.setnchannels(1)
             w.setsampwidth(2)
             w.setframerate(16000)
             w.writeframes(pcm)
+        wav_bytes = wav_buf.getvalue()
 
         port = server_port(cfg)
         if server_up(port) or start_server(cfg):
             try:
-                return self._transcribe_server(wav_path, port, language)
+                return self._transcribe_server(wav_bytes, port, language)
             except Exception as ex:
                 logger.warning(f"Server transcription failed ({ex}) - falling back to CLI")
 
-        return self._transcribe_cli(wav_path, model, language)
+        config.ensure_dirs()
+        with tempfile.NamedTemporaryFile(
+            suffix=".wav",
+            dir=config.LOCALAPPDATA if config.LOCALAPPDATA.exists() else None,
+            delete=False,
+        ) as tmp:
+            tmp.write(wav_bytes)
+            wav_path = Path(tmp.name)
+        try:
+            return self._transcribe_cli(wav_path, model, language)
+        finally:
+            wav_path.unlink(missing_ok=True)
 
-    def _transcribe_server(self, wav_path: Path, port: int, language: str) -> str:
+    def _transcribe_server(self, wav_data: bytes | Path, port: int, language: str) -> str:
+        wav_bytes = wav_data.read_bytes() if isinstance(wav_data, Path) else wav_data
         boundary = "----remi" + uuid.uuid4().hex
         parts = []
         parts.append(
-            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{wav_path.name}"\r\n'
-            f'Content-Type: audio/wav\r\n\r\n'.encode() + wav_path.read_bytes() + b"\r\n"
+            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="utterance.wav"\r\n'
+            f'Content-Type: audio/wav\r\n\r\n'.encode() + wav_bytes + b"\r\n"
         )
         for field, value in (
             ("response-format", "json"),
@@ -281,6 +298,7 @@ class WhisperCppEngine(BaseASREngine):
                 "8",
             ],
             capture_output=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             timeout=900,
         )
         if proc.returncode != 0:

@@ -10,7 +10,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from pathlib import Path
 
 try:
     import websocket
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 def is_cdp_up(port: int) -> bool:
     """Check if Chrome DevTools Protocol endpoint is responding on the given port."""
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=2) as r:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=0.3) as r:
             return r.status == 200
     except Exception:
         return False

@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 import logging
-import os
 import tomllib
 import urllib.parse
 from pathlib import Path
-from typing import Any
 
 from remi.core import config
 from remi.core.registry import SkillRegistry
@@ -88,10 +86,16 @@ class SkillManager:
                 continue
             matched, payload = skill.matches(text)
             if matched and skill.action:
-                return self._run_action(skill, payload, cfg)
+                return self._run_action(skill, payload, cfg, matched_text=text)
         return False, "", ""
 
-    def _run_action(self, skill: Skill, payload: str, cfg: dict) -> tuple[bool, str, str]:
+    def _run_action(
+        self,
+        skill: Skill,
+        payload: str,
+        cfg: dict,
+        matched_text: str = "",
+    ) -> tuple[bool, str, str]:
         act = skill.action
         if not act:
             return False, "", ""
@@ -128,7 +132,7 @@ class SkillManager:
                 "settings": "ms-settings:",
             }
             exe = "calc.exe"
-            t_lower = payload.lower() if payload else skill.name.lower()
+            t_lower = (payload or matched_text or skill.name).lower()
             for k, v in app_map.items():
                 if k in t_lower or k in act.spoken.lower():
                     exe = v

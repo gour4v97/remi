@@ -164,6 +164,7 @@ def run(text: str, cfg: dict) -> Outcome:
         return Outcome(False, "nothing heard", "empty transcript")
 
     # Hinglish word order normalization: "youtube kholo" -> "youtube"
+    orig_t = t
     stripped = re.sub(r"\s+(khol(?:o|a)?(?:\s+do|dena)?|open karo|khol de)$", "", t)
     if stripped != t:
         t = stripped
@@ -300,7 +301,7 @@ def run(text: str, cfg: dict) -> Outcome:
             return Outcome(False, "no open tabs", "empty tab list")
         return _open(cfg, pages[0]["url"], "duplicated tab")
 
-    # Site launch or search fallback
+    # Site launch, modular skills, or search fallback
     open_payload = _starts_with(t, "open", "kholo", "khol", "launch", "jao", "go to", "goto")
     if open_payload:
         site = open_payload.strip().rstrip(".!?")
@@ -308,6 +309,16 @@ def run(text: str, cfg: dict) -> Outcome:
             return _open(cfg, SITES[site.lower()], f"opening {site}")
         if _looks_like_domain(site):
             return _open(cfg, "https://" + site, f"opening {site}")
+        # Check skills before generic web search so "open calculator" / "open hacker news" match skills
+        try:
+            from remi.skills import SkillManager
+            mgr = SkillManager()
+            for candidate in (orig_t, t):
+                handled, spoken, detail = mgr.match_and_execute(candidate, cfg)
+                if handled or detail == "CDP down":
+                    return Outcome(handled, spoken, detail)
+        except Exception:
+            pass
         return _open(cfg, "https://www.google.com/search?q=" + urllib.parse.quote(open_payload), f"search: {open_payload}")
 
     # YouTube search
@@ -329,9 +340,10 @@ def run(text: str, cfg: dict) -> Outcome:
     try:
         from remi.skills import SkillManager
         mgr = SkillManager()
-        handled, spoken, detail = mgr.match_and_execute(t, cfg)
-        if handled:
-            return Outcome(True, spoken, detail)
+        for candidate in (orig_t, t):
+            handled, spoken, detail = mgr.match_and_execute(candidate, cfg)
+            if handled or detail == "CDP down":
+                return Outcome(handled, spoken, detail)
     except Exception:
         pass
 
@@ -348,10 +360,13 @@ def run(text: str, cfg: dict) -> Outcome:
                     detail = res.get("detail", action)
                     if action == "open_url" and res.get("url"):
                         return _open(cfg, res["url"], spoken)
-                    elif action == "search" and res.get("search_query"):
+                    if action == "search" and res.get("search_query"):
                         q = res["search_query"]
                         return _open(cfg, f"https://www.google.com/search?q={urllib.parse.quote(q)}", spoken)
-                    elif action == "speak":
+                    if action == "browser_action" and detail:
+                        nested_cfg = dict(cfg, llm_enabled=False)
+                        return run(detail, nested_cfg)
+                    if action == "speak":
                         return Outcome(True, spoken, detail)
         except Exception:
             pass
