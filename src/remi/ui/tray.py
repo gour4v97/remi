@@ -14,9 +14,12 @@ except Exception:
 
 try:
     import pystray
-    from PIL import Image, ImageDraw
 except Exception:
     pystray = None
+
+try:
+    from PIL import Image, ImageDraw
+except Exception:
     Image = None
     ImageDraw = None
 
