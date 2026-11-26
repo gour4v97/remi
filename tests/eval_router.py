@@ -83,7 +83,10 @@ EVAL_DATASET = [
 
 def run_eval() -> None:
     import subprocess
+    import tempfile
     from unittest.mock import patch
+    from remi.core import config
+    from remi.core.memory import MemoryStore
     from remi.tools import browser
 
     print("\n=======================================================")
@@ -97,32 +100,44 @@ def run_eval() -> None:
     print(f"{'Utterance':<30} {'Expected':<10} {'Result':<10} {'Latency':>10}")
     print(f"{'-'*64}")
 
-    with (
-        patch.object(browser, "is_cdp_up", return_value=False),
-        patch.object(subprocess, "Popen", return_value=None),
-    ):
-        for query, expected_ok, expected_snippet in EVAL_DATASET:
-            t0 = time.perf_counter()
-            outcome = router.run(query, cfg)
-            elapsed_ms = (time.perf_counter() - t0) * 1000
-            total_time_ms += elapsed_ms
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig_instance = MemoryStore._instance
+        MemoryStore._instance = None
+        try:
+            with (
+                patch.object(config, "APPDATA", Path(tmpdir)),
+                patch.object(browser, "is_cdp_up", return_value=False),
+                patch.object(subprocess, "Popen", return_value=None),
+            ):
+                mem = MemoryStore.get_instance()
+                mem.remember_entity("last_url", "https://www.youtube.com", "youtube")
 
-            combined = f"{outcome.spoken} {outcome.detail}"
-            if expected_snippet.startswith("system_app:"):
-                is_correct = outcome.ok == expected_ok and expected_snippet in combined
-            else:
-                is_correct = (
-                    (outcome.ok == expected_ok and (not expected_snippet or expected_snippet in combined))
-                    or "browser not reachable" in outcome.spoken
-                )
+                for query, expected_ok, expected_snippet in EVAL_DATASET:
+                    t0 = time.perf_counter()
+                    outcome = router.run(query, cfg)
+                    elapsed_ms = (time.perf_counter() - t0) * 1000
+                    total_time_ms += elapsed_ms
 
-            if is_correct:
-                passed += 1
-                status = "[PASS]"
-            else:
-                status = "[FAIL]"
+                    combined = f"{outcome.spoken} {outcome.detail}"
+                    if expected_snippet.startswith("system_app:"):
+                        is_correct = outcome.ok == expected_ok and expected_snippet in combined
+                    else:
+                        is_correct = (
+                            (outcome.ok == expected_ok and (not expected_snippet or expected_snippet in combined))
+                            or "browser not reachable" in outcome.spoken
+                        )
 
-            print(f"{query:<30} {str(expected_ok):<10} {status:<10} {elapsed_ms:>8.2f}ms")
+                    if is_correct:
+                        passed += 1
+                        status = "[PASS]"
+                    else:
+                        status = "[FAIL]"
+
+                    print(f"{query:<30} {str(expected_ok):<10} {status:<10} {elapsed_ms:>8.2f}ms")
+
+                mem.close()
+        finally:
+            MemoryStore._instance = orig_instance
 
     avg_latency = total_time_ms / len(EVAL_DATASET)
     accuracy = (passed / len(EVAL_DATASET)) * 100
