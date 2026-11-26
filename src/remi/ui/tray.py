@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
+from pathlib import Path
 from typing import Any, Callable
 
 try:
@@ -24,10 +25,32 @@ from remi.core.constants import COLORS
 logger = logging.getLogger(__name__)
 
 
+def _find_logo_png() -> Path | None:
+    candidates = [
+        Path(__file__).resolve().parent.parent / "assets" / "logo.png",
+        Path(__file__).resolve().parent.parent.parent.parent / "assets" / "logo.png",
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
+
+
 def make_icon(color: tuple[int, int, int], letter: str) -> Any:
-    """Generate a 64x64 RGBA circular icon with specified background color and letter."""
+    """Generate a 64x64 RGBA tray icon using the Remi logo with a state indicator dot."""
     if Image is None or ImageDraw is None:
         return None
+    logo_path = _find_logo_png()
+    if logo_path is not None:
+        try:
+            with Image.open(logo_path) as base:
+                img = base.convert("RGBA").resize((64, 64), Image.Resampling.LANCZOS)
+            d = ImageDraw.Draw(img)
+            d.ellipse([39, 39, 62, 62], fill=(17, 19, 29, 255))
+            d.ellipse([42, 42, 59, 59], fill=color + (255,))
+            return img
+        except Exception:
+            pass
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.ellipse([4, 4, 60, 60], fill=color + (255,))

@@ -5,6 +5,8 @@ import logging
 import sys
 from pathlib import Path
 
+from remi.core.constants import APP_DICTATION_ID
+
 try:
     import winreg
     IS_WINDOWS = True
@@ -17,10 +19,15 @@ logger = logging.getLogger(__name__)
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 
-def _value_for(script: str) -> str:
+def _value_for(script: str, app: str = "") -> str:
+    subcmd = "dictation" if app == APP_DICTATION_ID else "start"
+    if getattr(sys, "frozen", False):
+        return f'"{sys.executable}" {subcmd}'
     exe = Path(sys.executable)
     name = "pythonw.exe" if exe.name == "python.exe" else exe.name
     exe = exe.with_name(name)  # pythonw prevents console window flash at login
+    if app or Path(script).suffix.lower() != ".py":
+        return f'"{exe}" -m remi {subcmd}'
     return f'"{exe}" "{Path(script).resolve()}"'
 
 
@@ -32,7 +39,7 @@ def set_autostart(app: str, script: str, on: bool) -> None:
 
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
         if on:
-            winreg.SetValueEx(k, app, 0, winreg.REG_SZ, _value_for(script))
+            winreg.SetValueEx(k, app, 0, winreg.REG_SZ, _value_for(script, app))
         else:
             try:
                 winreg.DeleteValue(k, app)

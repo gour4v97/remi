@@ -13,8 +13,7 @@ from __future__ import annotations
 import logging
 import queue
 import threading
-import time
-from typing import Any
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +72,17 @@ class StatusOverlay:
         try:
             self._root = tk.Tk()
             self._root.title("Remi HUD")
+            for logo_p in (
+                Path(__file__).resolve().parent.parent / "assets" / "logo.png",
+                Path(__file__).resolve().parent.parent.parent.parent / "assets" / "logo.png",
+            ):
+                if logo_p.exists():
+                    try:
+                        self._icon_img = tk.PhotoImage(file=str(logo_p))
+                        self._root.iconphoto(True, self._icon_img)
+                    except Exception:
+                        pass
+                    break
             self._root.overrideredirect(True)  # Frameless
             self._root.wm_attributes("-topmost", True)  # Always on top
             try:

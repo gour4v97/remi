@@ -15,10 +15,9 @@ import click
 from remi.core import config
 from remi.core.constants import (
     APP_BROWSER_ID,
-    APP_DICTATION_ID,
     APP_DISPLAY_NAME,
+    APP_PUBLISHER,
     APP_VERSION,
-    MODEL_CATALOG,
 )
 from remi.engine import whisper_cpp
 from remi.engine.llm import auto_detect_llm
@@ -29,7 +28,7 @@ def run_setup(non_interactive: bool = False) -> None:
     """Run interactive or automated setup wizard."""
     click.echo("\n" + "=" * 60)
     click.echo(f"   🚀 Welcome to {APP_DISPLAY_NAME} (v{APP_VERSION}) Setup Wizard")
-    click.echo("   Publisher: GAURAV")
+    click.echo(f"   Publisher: {APP_PUBLISHER}")
     click.echo("=" * 60 + "\n")
     click.echo("This wizard will inspect your environment, verify hardware acceleration,")
     click.echo("download speech recognition models, and configure launch shortcuts.\n")
@@ -131,38 +130,37 @@ def run_setup(non_interactive: bool = False) -> None:
     click.echo("  • System Health Diagnostics     : remi doctor\n")
 
 
-def create_launcher_scripts() -> list[str]:
+def create_launcher_scripts(target_dir: Path | None = None) -> list[str]:
     """Generate double-clickable Windows .bat launchers and shell scripts."""
     root_dir = Path(__file__).resolve().parent.parent.parent.parent
-    scripts_dir = root_dir / "scripts"
+    scripts_dir = target_dir if target_dir is not None else (root_dir / "scripts")
     scripts_dir.mkdir(parents=True, exist_ok=True)
 
     results: list[str] = []
 
     # 1. Remi Browser Launcher (Windows batch)
     remi_bat = scripts_dir / "launch-remi.bat"
-    remi_bat_content = """@echo off
+    remi_bat_content = f"""@echo off
 :: ===================================================================
 :: Remi Browser Voice Controller
-:: Publisher: GAURAV
-:: Copyright (c) 2026 GAURAV. All rights reserved.
+:: Publisher: {APP_PUBLISHER}
+:: Copyright (c) 2026 {APP_PUBLISHER}. All rights reserved.
 :: ===================================================================
-title Remi Voice Assistant - Publisher: GAURAV
+title Remi Voice Assistant - Publisher: {APP_PUBLISHER}
 cd /d "%~dp0\\.."
-echo Starting Remi Browser Voice Controller (Ctrl+Alt+B)...
 if exist "venv\\Scripts\\python.exe" (
-    venv\\Scripts\\python.exe -m remi start
+    set "PY_EXE=venv\\Scripts\\python.exe"
+) else if exist ".venv\\Scripts\\python.exe" (
+    set "PY_EXE=.venv\\Scripts\\python.exe"
 ) else (
-    python -m remi start
+    set "PY_EXE=python"
 )
+echo Starting Remi Browser Voice Controller (Ctrl+Alt+B)...
+"%PY_EXE%" -m remi start
 if %errorlevel% neq 0 (
     echo.
     echo Remi encountered an error. Running diagnostics...
-    if exist "venv\\Scripts\\python.exe" (
-        venv\\Scripts\\python.exe -m remi doctor
-    ) else (
-        python -m remi doctor
-    )
+    "%PY_EXE%" -m remi doctor
     pause
 )
 """
@@ -171,28 +169,27 @@ if %errorlevel% neq 0 (
 
     # 2. Voice Trans Dictation Launcher (Windows batch)
     dict_bat = scripts_dir / "launch-dictation.bat"
-    dict_bat_content = """@echo off
+    dict_bat_content = f"""@echo off
 :: ===================================================================
 :: Voice Trans Push-to-Talk Dictation
-:: Publisher: GAURAV
-:: Copyright (c) 2026 GAURAV. All rights reserved.
+:: Publisher: {APP_PUBLISHER}
+:: Copyright (c) 2026 {APP_PUBLISHER}. All rights reserved.
 :: ===================================================================
-title Voice Trans Dictation - Publisher: GAURAV
+title Voice Trans Dictation - Publisher: {APP_PUBLISHER}
 cd /d "%~dp0\\.."
-echo Starting Voice Trans Push-to-Talk Dictation (Ctrl+Alt+Space)...
 if exist "venv\\Scripts\\python.exe" (
-    venv\\Scripts\\python.exe -m remi dictation
+    set "PY_EXE=venv\\Scripts\\python.exe"
+) else if exist ".venv\\Scripts\\python.exe" (
+    set "PY_EXE=.venv\\Scripts\\python.exe"
 ) else (
-    python -m remi dictation
+    set "PY_EXE=python"
 )
+echo Starting Voice Trans Push-to-Talk Dictation (Ctrl+Alt+Space)...
+"%PY_EXE%" -m remi dictation
 if %errorlevel% neq 0 (
     echo.
     echo Voice Trans encountered an error. Running diagnostics...
-    if exist "venv\\Scripts\\python.exe" (
-        venv\\Scripts\\python.exe -m remi doctor
-    ) else (
-        python -m remi doctor
-    )
+    "%PY_EXE%" -m remi doctor
     pause
 )
 """
@@ -201,13 +198,13 @@ if %errorlevel% neq 0 (
 
     # 3. Setup / Doctor (Windows batch)
     setup_bat = scripts_dir / "setup.bat"
-    setup_bat_content = """@echo off
+    setup_bat_content = f"""@echo off
 :: ===================================================================
 :: Remi Suite Setup
-:: Publisher: GAURAV
-:: Copyright (c) 2026 GAURAV. All rights reserved.
+:: Publisher: {APP_PUBLISHER}
+:: Copyright (c) 2026 {APP_PUBLISHER}. All rights reserved.
 :: ===================================================================
-title Remi Setup Wizard - Publisher: GAURAV
+title Remi Setup Wizard - Publisher: {APP_PUBLISHER}
 cd /d "%~dp0\\.."
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
 if %errorlevel% neq 0 (

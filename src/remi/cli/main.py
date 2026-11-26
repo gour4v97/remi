@@ -340,7 +340,11 @@ def cmd_bench(wav: str | None, runs: int):
 @main.command(name="eval")
 def cmd_eval():
     """Run the 36-query accuracy and routing evaluation suite."""
-    from tests.eval_router import run_eval
+    try:
+        from tests.eval_router import run_eval
+    except ImportError:
+        click.echo("Evaluation harness requires running from the Remi source repository.", err=True)
+        sys.exit(1)
     run_eval()
 
 

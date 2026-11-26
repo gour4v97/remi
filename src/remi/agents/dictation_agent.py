@@ -5,7 +5,6 @@ import logging
 import re
 import threading
 import time
-from pathlib import Path
 from typing import Any
 
 try:
@@ -167,12 +166,12 @@ class DictationAgent(BaseAgent):
                     self._state["capturing"] = cap
                 return
             cap = self._state["capturing"]
+            start_hwnd = self._state["hwnd"]
             self._state["capturing"] = None
             self._state["busy"] = True
 
-        if self._state["busy"]:
+        if cap is not None:
             pcm = cap.stop_and_read()
-            start_hwnd = self._state["hwnd"]
             self._state["busy"] = False
             if self.tray:
                 self.tray.set_state("idle", self.cfg.get("hotkey", DEFAULT_HOTKEY_DICTATION))
@@ -212,7 +211,11 @@ class DictationAgent(BaseAgent):
             pystray.MenuItem("Toggle dictation", toggle_action, default=True),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
-                lambda item: f"Delivery: type  {'✓' if self.cfg.get('delivery_mode', 'type') == 'type' else ''}",
+                lambda item: f"Delivery: paste  {'✓' if self.cfg.get('delivery_mode', 'paste') == 'paste' else ''}",
+                set_mode("paste"),
+            ),
+            pystray.MenuItem(
+                lambda item: f"Delivery: type  {'✓' if self.cfg.get('delivery_mode') == 'type' else ''}",
                 set_mode("type"),
             ),
             pystray.MenuItem(
