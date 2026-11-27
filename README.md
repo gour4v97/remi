@@ -18,6 +18,10 @@
 
 <br/>
 
+<img src="assets/poster.jpg" alt="Remi Background Poster" width="85%" />
+
+<br/>
+
 <img src="assets/hud-demo.svg" alt="Remi HUD and Pipeline Flow" width="85%" />
 
 </div>
